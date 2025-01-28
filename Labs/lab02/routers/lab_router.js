@@ -51,12 +51,16 @@ router.get("/calculate/:a/:b/:operation", (req, res) => {
       result = a * b;
       break;
 
-      case "/": // -> %2f
-        if (b === 0) {
-          return res.send("Error: Division by zero is not allowed");
-        }
-        result = a / b;
-        break;
+    case "/": // -> %2f
+      if (b === 0) {
+        return res.send("Error: Division by zero is not allowed");
+      }
+      result = a / b;
+      break;
+
+    case "**":
+      result = a ** b; // Exponentiation
+      break;
 
     default:
       res.send("Invalid operation");
