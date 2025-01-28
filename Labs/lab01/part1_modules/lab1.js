@@ -9,3 +9,25 @@ const holidays = [
     { name: "Thanksgiving", date: "2025-11-27" },
     { name: "Remembrance Day", date: "2025-11-11" },
   ];
+
+  function daysUntilHoliday(date) {
+    const today = new Date();
+    const holidayDate = new Date(date);
+    const timeDiff = holidayDate - today;
+    return Math.ceil(timeDiff / (1000 * 60 * 60 * 24)); 
+  }
+  
+  console.log("Days until each holiday:");
+  holidays.forEach((holiday) => {
+    console.log(`${holiday.name}: ${daysUntilHoliday(holiday.date)} days`);
+  });
+  
+  const randomHoliday = _.sample(holidays);
+  console.log("\nRandom holiday:");
+  console.log(`${randomHoliday.name}: ${randomHoliday.date}`);
+  
+  const holidayNames = holidays.map((holiday) => holiday.name);
+  console.log("\nIndexes of specific holidays:");
+  console.log(`Christmas: ${_.indexOf(holidayNames, "Christmas")}`);
+  console.log(`Canada Day: ${_.indexOf(holidayNames, "Canada Day")}`);
+  console.log(`Remembrance Day: ${_.indexOf(holidayNames, "Remembrance Day")}`);
