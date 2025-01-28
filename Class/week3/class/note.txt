@@ -1,0 +1,12 @@
+#code we will be using often
+(to start the files)
+npm init -y
+npm i express nodemon dotenv
+(will prob have to sudo own)
+
+create a new file ".env"
+    "PORT=9000"
+
+create a new file "index.js"
+modify package.json > "type":"module"
+
