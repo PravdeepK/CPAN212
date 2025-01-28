@@ -2,12 +2,13 @@ import _ from "lodash";
 
 const holidays = [
     { name: "New Year", date: "2026-01-01" },
-    { name: "Valentine's Day", date: "2026-02-14" },
+    { name: "Valentine's Day", date: "2025-02-14" },
     { name: "Christmas", date: "2025-12-25" },
     { name: "Canada Day", date: "2025-07-01" },
     { name: "Halloween", date: "2025-10-31" },
     { name: "Thanksgiving", date: "2025-11-27" },
     { name: "Remembrance Day", date: "2025-11-11" },
+    { name: "My Birthday", date: "2025-11-07" },
   ];
 
   function daysUntilHoliday(date) {
@@ -31,3 +32,4 @@ const holidays = [
   console.log(`Christmas: ${_.indexOf(holidayNames, "Christmas")}`);
   console.log(`Canada Day: ${_.indexOf(holidayNames, "Canada Day")}`);
   console.log(`Remembrance Day: ${_.indexOf(holidayNames, "Remembrance Day")}`);
+  console.log(`My Birthday: ${_.indexOf(holidayNames, "My Birthday")}`);
