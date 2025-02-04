@@ -10,6 +10,8 @@
 // [Please enable only ONE of these]
 import express from "express"; // if you are using type: module
 import logger from "./middleware/logger.js";
+import auth from "./middleware/auth.js";
+
 // const express = require("express"); // if using common JS (Default)
 
 const app = express();
@@ -38,8 +40,8 @@ app.get("/login", (req, res) => {
   res.send("We stole your information");
 });
 
-app.get("/fetchData", (req, res) => {
-  res.send("Welcome to our server");
+app.get("/fetchData", auth, (req, res) => {
+  res.send("Hi Prav, Here is your data");
 });
 
 app.listen(PORT, () => {
