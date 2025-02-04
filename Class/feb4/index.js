@@ -20,6 +20,10 @@ app.use(express.json());
  
 // routes
 app.get("/", (req, res) => {
+  console.log(req.url);
+  console.log(req.method);
+  console.log(req.url);
+  console.log(req.url);
   res.send("Welcome to our server");
 });
 
