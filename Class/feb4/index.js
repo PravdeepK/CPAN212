@@ -13,6 +13,13 @@ import express from "express"; // if you are using type: module
  
 const app = express();
 const PORT = process.env.PORT || 8000;
+
+const logger = () => {
+  console.log(req.url);
+  console.log(req.method);
+  console.log(req.headers);
+  console.log(Date());
+}
  
 // middlelware
 app.use(express.urlencoded({ extended: true }));
@@ -20,10 +27,7 @@ app.use(express.json());
  
 // routes
 app.get("/", (req, res) => {
-  console.log(req.url);
-  console.log(req.method);
-  console.log(req.url);
-  console.log(req.url);
+
   res.send("Welcome to our server");
 });
 
