@@ -11,12 +11,15 @@
 // [Please enable only ONE of these] 
 import express from "express"; // if you are using type: module
 //const express = require("express"); // if using common JS (Default)
+import cors from "cors";
  
 const app = express();
 const PORT = process.env.PORT || 8000;
  
 // middlelware
-
+app.use(cors());
+app.use(express.urlencoded({ extended: true })); // for html forms
+app.use(express.json()); // extracts application/json data, old method was body-parser
  
 // routes
 app.get("/", (req, res) => {
@@ -30,6 +33,12 @@ app.get("/data", (req, res) => {
         fname: "Pravdeep",
     };
     res.send(data);
+  });
+
+  app.post("/login", (req, res) => {
+    console.log(req.body);
+    //process with DB in the future
+    res.send("I stole your data");
   });
  
 app.listen(PORT, () => {
