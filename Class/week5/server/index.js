@@ -12,6 +12,19 @@
 import express from "express"; // if you are using type: module
 //const express = require("express"); // if using common JS (Default)
 import cors from "cors";
+import multer from "multer";
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, '/uploads/')
+  },
+  filename: function (req, file, cb) {
+    const uniquePreFix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, uniquePrefix + '-' + file.fieldname)
+  }
+})
+
+const upload = multer({ storage: storage })
  
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -40,6 +53,13 @@ app.get("/data", (req, res) => {
     //process with DB in the future
     res.send("I stole your data");
   });
+
+  //new stuff in lab
+  app.post("/fileform", upload.single("file"), (req, res) => {
+    console.log(req.file);
+    console.log(req.body);
+    res.json("I received your info");
+  })
  
 app.listen(PORT, () => {
   console.log(`http://localhost:${PORT}`);
