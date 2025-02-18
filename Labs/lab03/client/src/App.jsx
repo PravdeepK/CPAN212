@@ -102,8 +102,9 @@ const App = () => {
 
       const formData = new FormData();
       formData.append("file", blob, "dog-img.jpg");
-  
-      const response = await fetch(`https://localhost:8000/save/single`, {
+      // <button onClick={saveDogImage}>Save Dog Image</button>
+
+      const response = await fetch(`http://localhost:8000/save/single`, {
         method: "POST",
         body: formData,
       });
@@ -153,7 +154,7 @@ const App = () => {
       {displayDogImage && (
         <div>
           <img src={displayDogImage} style={{ width: "200px" }} />
-          <button onClick={saveDogImage}>Save Dog Image</button>
+          <button onClick={saveDogImage}>Save Dog Image</button>{" "}
         </div>
       )}
     </div>
