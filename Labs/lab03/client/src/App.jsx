@@ -95,6 +95,24 @@ const App = () => {
     }
   };
   // fetch functions -> save dog image [TODO]
+  const saveDogImage = async () => {
+    try {
+      const fileResponse = await fetch(displayDogImage);
+      const blob = await fileResponse.blob();
+
+      const formData = new FormData();
+      formData.append("file", blob, "dog-img.jpg");
+  
+      const response = await fetch(`https://localhost:8000/save/single`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      console.log(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
     <div>
@@ -135,6 +153,7 @@ const App = () => {
       {displayDogImage && (
         <div>
           <img src={displayDogImage} style={{ width: "200px" }} />
+          <button onClick={saveDogImage}>Save Dog Image</button>
         </div>
       )}
     </div>
