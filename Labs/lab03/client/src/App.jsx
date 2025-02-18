@@ -3,8 +3,9 @@ import { useState } from "react";
 const App = () => {
   // what do we need to track
   const [singleFile, setSingleFile] = useState(null);
-  const [multipleFiles, setMultipleFiles] = useState([]);
+  // const [multipleFiles, setMultipleFiles] = useState([]);
   const [displayImage, setDisplayImage] = useState(null);
+  const [displayImages, setDisplayImages] = useState([]);
   const [message, setMessage] = useState("");
 
   // Handlers
@@ -41,7 +42,7 @@ const App = () => {
     try {
       const formData = new FormData();
       formData.append("file", singleFile);
-      
+
       const response = await fetch(`http://localhost:8000/save/single`, {
         method: "POST",
         body: formData,
@@ -58,9 +59,32 @@ const App = () => {
     }
   };
 
-  // fetch functions -> save multiple [TODO]
   // fetch functions -> fetch multiple [TODO]
+  const fetchMultipleFiles = async () => {
+    try {
+      // fetch -/fetch/multiple => [01, 02, 03, 04, 05]
+      const response = await fetch(`http://localhost:8000/fetch/multiple`);
+      const data = await response.json();
+      console.log(data);
+      // fetch -/fetch/file/filename variable
+      const filePromises = data.map(async (filename) => {
+        const fileResponse = await fetch(
+          `http://localhost:8000/fetch/file/${filename}`
+        );
+
+        const fileBlob = await fileResponse.blob();
+        const imageUrl = URL.createObjectURL(fileBlob);
+        return imageUrl;
+      });
+
+      const imageUrls = await Promise.all(filePromises);
+      setDisplayImages(imageUrls);
+    } catch (error) {
+      console.error(error);
+    }
+  };
   // fetch functions -> fetch dog image [TODO]
+  
   // fetch functions -> save dog image [TODO]
 
   return (
@@ -83,6 +107,20 @@ const App = () => {
         <input type="file" onChange={handleSingleFileChange} />
         <button type="submit">Upload Single File</button>
       </form>
+      <button onClick={fetchMultipleFiles}>Fetch Multiple Files</button>
+      {displayImages.length > 0 ? (
+        displayImages.map((imageUrl, index) => (
+          <div key={index}>
+            <img
+              src={imageUrl}
+              style={{ width: "200px" }}
+              alt={`Image ${index}`}
+            />
+          </div>
+        ))
+      ) : (
+        <p>No Images to display</p>
+      )}
     </div>
   );
 };
