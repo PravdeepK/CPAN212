@@ -85,7 +85,7 @@ const App = () => {
     }
   };
   // fetch functions -> fetch dog image [TODO]
-  const fetchDogImage = async () => { 
+  const fetchDogImage = async () => {
     try {
       const response = await fetch(`https://dog.ceo/api/breeds/image/random`);
       const data = await response.json();
@@ -129,6 +129,13 @@ const App = () => {
         ))
       ) : (
         <p>No Images to display</p>
+      )}
+
+      <button onClick={fetchDogImage}>Fetch Dog Image</button>
+      {displayDogImage && (
+        <div>
+          <img src={displayDogImage} style={{ width: "200px" }} />
+        </div>
       )}
     </div>
   );
