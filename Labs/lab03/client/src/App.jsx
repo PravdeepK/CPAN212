@@ -6,6 +6,7 @@ const App = () => {
   // const [multipleFiles, setMultipleFiles] = useState([]);
   const [displayImage, setDisplayImage] = useState(null);
   const [displayImages, setDisplayImages] = useState([]);
+  const [displayDogImage, setDisplayDogImage] = useState("");
   const [message, setMessage] = useState("");
 
   // Handlers
@@ -84,7 +85,15 @@ const App = () => {
     }
   };
   // fetch functions -> fetch dog image [TODO]
-  
+  const fetchDogImage = async () => { 
+    try {
+      const response = await fetch(`https://dog.ceo/api/breeds/image/random`);
+      const data = await response.json();
+      setDisplayDogImage(data.message);
+    } catch (error) {
+      console.error(error);
+    }
+  };
   // fetch functions -> save dog image [TODO]
 
   return (
