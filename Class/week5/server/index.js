@@ -13,14 +13,19 @@ import express from "express"; // if you are using type: module
 //const express = require("express"); // if using common JS (Default)
 import cors from "cors";
 import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, '/uploads/')
+    cb(null, path.join(__dirname, '../uploads'))
   },
   filename: function (req, file, cb) {
     const uniquePreFix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, uniquePrefix + '-' + file.fieldname)
+    cb(null, uniquePreFix + '-' + file.fieldname)
   }
 })
 

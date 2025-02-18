@@ -39,11 +39,12 @@ const App = () => {
  const fileUpload = async(e) =>{
   e.preventDefault();
   const formData = new FormData();
+  formData.append("file", file);
 
   try{
 const response = await fetch(`http://localhost:8000/fileform`, {
   method: "POST",
-  body: "MY DATA HERE"
+  body: formData,
 
 })
 const data = await response.json();
