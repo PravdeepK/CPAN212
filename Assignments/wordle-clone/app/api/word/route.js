@@ -7,7 +7,6 @@ export async function GET() {
 
   try {
     if (!fs.existsSync(filePath)) {
-      console.error("❌ Error: Word list file not found.");
       return NextResponse.json({ error: "Word list file not found" }, { status: 500 });
     }
 
@@ -15,17 +14,15 @@ export async function GET() {
     const wordsList = fileContents
       .split("\n")
       .map((word) => word.trim().toUpperCase())
-      .filter((word) => word.length === 5); // Ensure only 5-letter words
+      .filter((word) => word.length === 5);
 
     if (wordsList.length === 0) {
-      console.error("❌ Error: No words found.");
       return NextResponse.json({ error: "No words available" }, { status: 500 });
     }
 
     const randomWord = wordsList[Math.floor(Math.random() * wordsList.length)];
     return NextResponse.json({ word: randomWord });
   } catch (error) {
-    console.error("❌ Error reading words file:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

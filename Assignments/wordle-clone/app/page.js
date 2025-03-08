@@ -1,11 +1,15 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 const WORD_LENGTH = 5;
 const MAX_TRIES = 6;
 
 export default function Home() {
-  const [guesses, setGuesses] = useState([]);
+  const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [isUsernameSet, setIsUsernameSet] = useState(false);
+  const [guesses, setGuesses] = useState(Array(MAX_TRIES).fill("")); // ✅ Initialize empty grid
   const [currentGuess, setCurrentGuess] = useState("");
   const [secretWord, setSecretWord] = useState("");
   const [gameOver, setGameOver] = useState(false);
@@ -13,40 +17,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [darkMode, setDarkMode] = useState(false);
-
-  // ✅ Fetch Word and Handle API Errors
-  const fetchWord = async () => {
-    setLoading(true);
-    setErrorMessage("");
-    try {
-      const res = await fetch("/api/word");
-
-      // ✅ Check if response is OK before parsing JSON
-      if (!res.ok) {
-        console.error(`❌ API Error: ${res.status} ${res.statusText}`);
-        setErrorMessage("❌ Failed to fetch word");
-        return;
-      }
-
-      const data = await res.json();
-      if (data.word) {
-        console.log("✅ Secret Word:", data.word);
-        setSecretWord(data.word);
-        setGuesses([]);
-        setGameOver(false);
-        setWon(false);
-        setCurrentGuess("");
-      } else {
-        console.error("❌ API Error: No word returned.");
-        setErrorMessage("❌ No word available");
-      }
-    } catch (error) {
-      console.error("❌ Fetch error:", error);
-      setErrorMessage("❌ Network error");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     fetchWord();
@@ -70,7 +40,33 @@ export default function Home() {
     });
   };
 
-  // ✅ Validate if the entered word is real
+  const setUser = () => {
+    setIsUsernameSet(true);
+  };
+
+  const fetchWord = async () => {
+    setLoading(true);
+    setErrorMessage("");
+    try {
+      const res = await fetch("/api/word");
+      if (!res.ok) return setErrorMessage("❌ Failed to fetch word");
+
+      const data = await res.json();
+      if (data.word) {
+        console.log("✅ Secret Word:", data.word);
+        setSecretWord(data.word);
+        setGuesses(Array(MAX_TRIES).fill("")); // ✅ Reset grid when fetching a new word
+        setGameOver(false);
+        setWon(false);
+        setCurrentGuess("");
+      }
+    } catch (error) {
+      setErrorMessage("❌ Network error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const validateWord = async (word) => {
     try {
       const res = await fetch("/api/validate", {
@@ -81,104 +77,92 @@ export default function Home() {
       const data = await res.json();
       return data.valid;
     } catch (error) {
-      console.error("❌ Validation error:", error);
       return false;
     }
   };
 
-  const handleInputChange = (e) => {
-    if (e.target.value.length <= WORD_LENGTH) {
-      setCurrentGuess(e.target.value.toUpperCase());
-    }
+  const checkGuess = (guess) => {
+    return guess.split("").map((letter, index) => {
+      if (letter === secretWord[index]) return "bg-green-500 text-white";
+      if (secretWord.includes(letter)) return "bg-yellow-500 text-black";
+      return "bg-gray-400 text-white";
+    });
   };
 
   const handleKeyPress = async (e) => {
     if (e.key === "Enter" && currentGuess.length === WORD_LENGTH) {
-      setErrorMessage(""); // Clear previous error
+      setErrorMessage("");
 
       const isValidWord = await validateWord(currentGuess);
       if (!isValidWord) {
-        setErrorMessage("❌ Not a valid word!");
+        setErrorMessage("❌ Not a valid word! Please enter a real word.");
         return;
       }
 
-      const newGuesses = [...guesses, currentGuess];
-      setGuesses(newGuesses);
+      const newGuesses = [...guesses];
+      const nextEmptyRow = newGuesses.findIndex((row) => row === "");
+      if (nextEmptyRow !== -1) {
+        newGuesses[nextEmptyRow] = currentGuess;
+        setGuesses(newGuesses);
+      }
+
       setCurrentGuess("");
 
       if (currentGuess === secretWord) {
         setWon(true);
         setGameOver(true);
-      } else if (newGuesses.length >= MAX_TRIES) {
+      } else if (newGuesses.filter((g) => g !== "").length >= MAX_TRIES) {
         setGameOver(true);
       }
     }
   };
 
-  // ✅ Apply Colors to Tiles Based on Guess Accuracy
-  const checkGuess = (guess) => {
-    return guess.split("").map((letter, index) => {
-      if (letter === secretWord[index]) return "bg-green-500 text-white"; // ✅ Correct position
-      if (secretWord.includes(letter)) return "bg-yellow-500 text-black"; // ✅ Wrong position
-      return "bg-gray-400 text-white"; // ❌ Not in word
-    });
-  };
+  // ✅ Restore Username Page Before Starting Game
+  if (!isUsernameSet) {
+    return (
+      <div className="container">
+        <h1 className="title">ENTER YOUR USERNAME</h1>
+        <input
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          className="input-box"
+          placeholder="YOUR NAME"
+        />
+        <button onClick={setUser} className="start-button">Start Game</button>
+      </div>
+    );
+  }
 
   return (
     <div className="container">
       <h1 className="title">Wordle Clone</h1>
+      <button onClick={() => router.push("/scoreboard")} className="scoreboard-button">View Scoreboard</button>
 
       <label className="dark-mode-switch">
         <input type="checkbox" checked={darkMode} onChange={toggleDarkMode} />
         <span className="slider"></span>
       </label>
 
-      {loading ? (
-        <p className="loading">Loading word...</p>
-      ) : (
-        <>
-          <div className="grid">
-            {Array.from({ length: MAX_TRIES }).map((_, rowIndex) => (
-              <div key={rowIndex} className="grid-row">
-                {Array.from({ length: WORD_LENGTH }).map((_, colIndex) => {
-                  const letter = guesses[rowIndex]?.[colIndex] || "";
-                  const styles = guesses[rowIndex]
-                    ? checkGuess(guesses[rowIndex])[colIndex]
-                    : "border-gray-400";
-
-                  return (
-                    <div key={colIndex} className={`cell ${styles}`}>
-                      {letter}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
+      <div className="grid">
+        {guesses.map((guess, rowIndex) => (
+          <div key={rowIndex} className="grid-row">
+            {Array.from({ length: WORD_LENGTH }).map((_, colIndex) => {
+              const letter = guess[colIndex] || "";
+              const styles = guess ? checkGuess(guess)[colIndex] : "border-gray-400";
+              return <div key={colIndex} className={`cell ${styles}`}>{letter}</div>;
+            })}
           </div>
+        ))}
+      </div>
 
-          <input
-            type="text"
-            value={currentGuess}
-            onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
-            className="input-box"
-            maxLength={WORD_LENGTH}
-            disabled={gameOver}
-          />
+      <input type="text" value={currentGuess} onChange={(e) => setCurrentGuess(e.target.value.toUpperCase())} onKeyPress={handleKeyPress} className="input-box" maxLength={WORD_LENGTH} />
 
-          {errorMessage && <p className="error-message">{errorMessage}</p>}
+      {errorMessage && <p className="error-message">{errorMessage}</p>}
 
-          {gameOver && (
-            <p className={`game-over ${won ? "win-message" : ""}`}>
-              {won ? "🎉 Congrats! You guessed the word!" : `Game Over! The word was ${secretWord}`}
-            </p>
-          )}
+      {gameOver && <p className="game-over">{won ? "🎉 Congrats! You guessed the word!" : `❌ Game Over! The word was ${secretWord}`}</p>}
 
-          <button onClick={fetchWord} className="restart-button">
-            Restart Game
-          </button>
-        </>
-      )}
+      <button onClick={fetchWord} className="restart-button">Restart Game</button>
     </div>
   );
 }
