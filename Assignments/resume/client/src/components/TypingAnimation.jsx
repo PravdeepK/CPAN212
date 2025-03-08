@@ -11,7 +11,7 @@ const TypingAnimation = () => {
           "Welcome to my website!", 2000,
         ]}
         wrapper="span"
-        speed={60}
+        speed={65}
         cursor={false}
         repeat={Infinity}
       />
