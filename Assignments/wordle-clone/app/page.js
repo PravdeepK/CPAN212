@@ -9,7 +9,7 @@ export default function Home() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [isUsernameSet, setIsUsernameSet] = useState(false);
-  const [guesses, setGuesses] = useState(Array(MAX_TRIES).fill("")); // ✅ Initialize empty grid
+  const [guesses, setGuesses] = useState(Array(MAX_TRIES).fill(""));
   const [currentGuess, setCurrentGuess] = useState("");
   const [secretWord, setSecretWord] = useState("");
   const [gameOver, setGameOver] = useState(false);
@@ -55,7 +55,7 @@ export default function Home() {
       if (data.word) {
         console.log("✅ Secret Word:", data.word);
         setSecretWord(data.word);
-        setGuesses(Array(MAX_TRIES).fill("")); // ✅ Reset grid when fetching a new word
+        setGuesses(Array(MAX_TRIES).fill(""));
         setGameOver(false);
         setWon(false);
         setCurrentGuess("");
@@ -117,7 +117,6 @@ export default function Home() {
     }
   };
 
-  // ✅ Restore Username Page Before Starting Game
   if (!isUsernameSet) {
     return (
       <div className="container">
