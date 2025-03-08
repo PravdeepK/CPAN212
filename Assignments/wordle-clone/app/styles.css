@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ✅ Light & Dark Mode Background */
 html {
     background-color: white;
     color: black;
