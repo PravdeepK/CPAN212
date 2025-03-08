@@ -25,7 +25,9 @@ a:hover {
 body {
   margin: 0;
   display: flex;
-  place-items: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   min-width: 320px;
   min-height: 100vh;
 }
@@ -35,34 +37,44 @@ h1 {
   line-height: 1.1;
 }
 
-button {
+button, .file-upload-label {
   border-radius: 8px;
   border: 1px solid transparent;
-  padding: 0.6em 1.2em;
+  padding: 0.8em 1.5em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
   background-color: #1a1a1a;
+  color: rgba(255, 255, 255, 0.87);
   cursor: pointer;
   transition: border-color 0.25s;
+  display: inline-block;
+  text-align: center;
 }
-button:hover {
+
+button:hover, .file-upload-label:hover {
   border-color: #646cff;
 }
-button:focus,
-button:focus-visible {
+
+button:focus, .file-upload-label:focus,
+button:focus-visible, .file-upload-label:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+input[type="file"] {
+  display: none;
+}
+
+.image-container {
+  margin-top: 10px;
+}
+
+.image-container img {
+  width: 200px;
+  display: block;
+  margin: auto;
+}
+
+.image-container button {
+  margin-top: 15px;
 }
