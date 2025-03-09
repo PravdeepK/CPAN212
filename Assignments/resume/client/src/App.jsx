@@ -1,32 +1,16 @@
 import { useState } from "react";
 import "./styles/styles.css"; // Import global styles
 import TypingAnimation from "./components/TypingAnimation";
+import project1Gif from "./assets/project01.gif"; // Import Project 1 GIF
 
 function App() {
   const [showProjects, setShowProjects] = useState(false);
 
-  // Function to open the resume link
-  const openResume = () => {
-    window.open(
-      "https://docs.google.com/document/d/1-scnARFnWeOxU5molGo561xV4tMgvr4i/edit?usp=drive_link&ouid=113750505912466755486&rtpof=true&sd=true",
-      "_blank"
-    );
-  };
-
-  // Function to open GitHub profile
-  const openGitHub = () => {
-    window.open("https://github.com/PravdeepK", "_blank");
-  };
-
-  // Function to open email client with predefined recipient
-  const openEmail = () => {
-    window.location.href = "mailto:pravdeepkk@gmail.com";
-  };
-
-  // Function to toggle project section
-  const toggleProjects = () => {
-    setShowProjects(!showProjects);
-  };
+  // Function to open links
+  const openResume = () => window.open("https://docs.google.com/document/d/1-scnARFnWeOxU5molGo561xV4tMgvr4i/edit?usp=drive_link", "_blank");
+  const openGitHub = () => window.open("https://github.com/PravdeepK", "_blank");
+  const openEmail = () => window.location.href = "mailto:pravdeepkk@gmail.com";
+  const toggleProjects = () => setShowProjects(!showProjects);
 
   return (
     <div className="container">
@@ -45,10 +29,22 @@ function App() {
 
       {/* Projects Section */}
       <div className={`projects-container ${showProjects ? "show" : ""}`}>
-        <div className="project-box">Project 1</div>
-        <div className="project-box">Project 2</div>
-        <div className="project-box">Project 3</div>
-        <div className="project-box">Project 4</div>
+        <div className="project-box" onClick={openGitHub}>
+          <img src={project1Gif} alt="Project 1" className="project-img" />
+          <div className="project-hover-text">Wordle Clone</div>
+        </div>
+        <div className="project-box" onClick={openGitHub}>
+          <img src={project1Gif} alt="Project 1" className="project-img" />
+          <div className="project-hover-text">Wordle Clone</div>
+        </div>
+        <div className="project-box" onClick={openGitHub}>
+          <img src={project1Gif} alt="Project 1" className="project-img" />
+          <div className="project-hover-text">Wordle Clone</div>
+        </div>
+        <div className="project-box" onClick={openGitHub}>
+          <img src={project1Gif} alt="Project 1" className="project-img" />
+          <div className="project-hover-text">Wordle Clone</div>
+        </div>
       </div>
     </div>
   );

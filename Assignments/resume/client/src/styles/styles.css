@@ -22,7 +22,7 @@ body {
     gap: 15px;
   }
   
-  /* Navigation Buttons - No Background */
+  /* Navigation Buttons */
   .nav-button {
     border: none;
     padding: 8px 16px;
@@ -49,9 +49,9 @@ body {
     align-items: center;
   }
   
-  /* Typing Animation Wrapper - Ensures Fixed Space */
+  /* Typing Animation Wrapper */
   .typing-wrapper {
-    min-height: 70px; /* Keeps space reserved for text */
+    min-height: 70px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -85,25 +85,67 @@ body {
   /* Show projects when toggled */
   .projects-container.show {
     opacity: 1;
-    max-height: 300px;
+    max-height: 500px;
   }
   
   /* Project Box */
   .project-box {
     background: rgba(255, 255, 255, 0.1);
-    color: white;
-    padding: 20px;
-    border-radius: 8px;
-    text-align: center;
-    font-size: 1.2em;
-    font-weight: bold;
+    border-radius: 12px; /* Ensures rounded corners */
     cursor: pointer;
-    transition: transform 0.2s, background 0.3s ease-in-out;
-    min-width: 140px;
+    transition: transform 0.2s, background 0.3s ease-in-out, box-shadow 0.3s;
+    position: relative;
+    overflow: hidden; /* Ensures no sharp corners */
+    width: 300px;  /* Slightly wider for a more rectangular shape */
+    height: 200px; /* Reduced height to make it rectangular */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
   }
+  
+  /* Hover Effect */
   .project-box:hover {
     background: rgba(255, 255, 255, 0.2);
     transform: translateY(-2px);
+    box-shadow: 0px 4px 15px rgba(255, 255, 255, 0.2);
+    border-radius: 12px; /* Keeps the curve on hover */
+  }
+  
+  /* Project Image */
+  .project-img {
+    width: 100%;
+    height: 100%; /* Makes the GIF rectangular */
+    object-fit: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 12px 12px 0 0; /* Rounded only on top */
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
+  }
+  
+  /* Project Hover Text (Fully Covers GIF) */
+  .project-hover-text {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2em;
+    font-weight: bold;
+    color: white;
+    opacity: 0;
+    background: rgba(0, 0, 0, 0.6);
+    transition: opacity 0.3s ease-in-out;
+  }
+  
+  /* Show text on hover */
+  .project-box:hover .project-hover-text {
+    opacity: 1;
   }
   
   /* Buttons */
