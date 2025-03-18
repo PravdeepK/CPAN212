@@ -14,6 +14,9 @@ const app = express();
 const PORT = process.env.PORT || 6000;
 
 //middlewares
+app.use(cors());
+app.use(express.json()); //allows json
+app.use(express.urlencoded({ extended: true })); //allows html form data
 
 //startup
 mongoose.connect(process.env.MONGODB_URL).then(() => {
