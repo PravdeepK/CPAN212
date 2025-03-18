@@ -41,4 +41,34 @@ router.get("/search", (req, res) => {
     res.json(results);
   });
 });
+
+// 4 update
+router.put("/:id", (req, res) => {
+  Book.findByIdAndUpdate(req.params.id).then(() => {
+    res.json({ message: "Updated" });
+  });
+});
+
+// 5 delete
+router.delete("/:id", (req, res) => {
+  Book.findByIdAndDelete(req.params.id).then(() => {
+    res.json({ message: "Deleted" });
+  });
+});
+
+router.post("/save", (req, res) => {
+  const { title, author, publisher } = req.body;
+
+  let newBook = new Book({
+    title,
+    author,
+    publisher,
+    page: 500,
+  });
+
+  newBook.save().then(() => {
+    res.json({ message: "Saved" });
+  });
+});
+
 export default router;
