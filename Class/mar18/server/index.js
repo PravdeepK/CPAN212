@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import Book from "./models/book.js"; // db.books.functionName()
 import book_router from "./routers/book_router.js"
-
+import user_router from "./routers/user_router.js"
 
 
 //variables
@@ -27,10 +27,12 @@ mongoose.connect(process.env.MONGODB_URL).then(() => {
 });
 
 
-app.use("/book", book_router);
 //routes
 app.get("/", (req, res) => {
   Book.find().then((results) => {
     res.json(results);
   });
 });
+
+app.use("/book", book_router);
+app.use("/user", user_router);
