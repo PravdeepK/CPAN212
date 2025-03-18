@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 
 const WORD_LENGTH = 5;
 const MAX_TRIES = 6;
+const KEYBOARD_LAYOUT = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 
 export default function Home() {
   const router = useRouter();
@@ -17,9 +18,16 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [darkMode, setDarkMode] = useState(false);
+  const [keyStatuses, setKeyStatuses] = useState({});
 
   useEffect(() => {
     fetchWord();
+    const savedUsername = localStorage.getItem("username");
+    if (savedUsername) {
+      setUsername(savedUsername);
+      setIsUsernameSet(true);
+    }
+
     const savedTheme = localStorage.getItem("darkMode");
     if (savedTheme === "true") {
       setDarkMode(true);
@@ -31,16 +39,13 @@ export default function Home() {
     setDarkMode((prevMode) => {
       const newMode = !prevMode;
       localStorage.setItem("darkMode", newMode);
-      if (newMode) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
+      document.documentElement.classList.toggle("dark", newMode);
       return newMode;
     });
   };
 
   const setUser = () => {
+    localStorage.setItem("username", username);
     setIsUsernameSet(true);
   };
 
@@ -56,6 +61,7 @@ export default function Home() {
         console.log("✅ Secret Word:", data.word);
         setSecretWord(data.word);
         setGuesses(Array(MAX_TRIES).fill(""));
+        setKeyStatuses({});
         setGameOver(false);
         setWon(false);
         setCurrentGuess("");
@@ -82,11 +88,17 @@ export default function Home() {
   };
 
   const checkGuess = (guess) => {
-    return guess.split("").map((letter, index) => {
-      if (letter === secretWord[index]) return "bg-green-500 text-white";
-      if (secretWord.includes(letter)) return "bg-yellow-500 text-black";
-      return "bg-gray-400 text-white";
+    let tileColors = Array(WORD_LENGTH).fill("bg-gray-400 text-white"); // Default to gray
+
+    guess.split("").forEach((letter, index) => {
+      if (letter === secretWord[index]) {
+        tileColors[index] = "bg-green-500 text-white"; // ✅ Correct position
+      } else if (secretWord.includes(letter)) {
+        tileColors[index] = "bg-yellow-500 text-black"; // 🟡 Wrong position
+      }
     });
+
+    return tileColors; // ✅ Only returns colors, does NOT update state
   };
 
   const handleKeyPress = async (e) => {
@@ -104,6 +116,22 @@ export default function Home() {
       if (nextEmptyRow !== -1) {
         newGuesses[nextEmptyRow] = currentGuess;
         setGuesses(newGuesses);
+
+        // ✅ Update key colors separately to prevent re-render issues
+        let newKeyStatuses = { ...keyStatuses };
+        currentGuess.split("").forEach((letter, index) => {
+          if (letter === secretWord[index]) {
+            newKeyStatuses[letter] = "bg-green-500 text-white"; // ✅ Correct position
+          } else if (secretWord.includes(letter)) {
+            if (newKeyStatuses[letter] !== "bg-green-500 text-white") {
+              newKeyStatuses[letter] = "bg-yellow-500 text-black"; // 🟡 Wrong position
+            }
+          } else {
+            newKeyStatuses[letter] = "bg-gray-400 text-white"; // ❌ Not in word
+          }
+        });
+
+        setKeyStatuses(newKeyStatuses);
       }
 
       setCurrentGuess("");
@@ -117,25 +145,10 @@ export default function Home() {
     }
   };
 
-  if (!isUsernameSet) {
-    return (
-      <div className="container">
-        <h1 className="title">ENTER YOUR USERNAME</h1>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="input-box"
-          placeholder="YOUR NAME"
-        />
-        <button onClick={setUser} className="start-button">Start Game</button>
-      </div>
-    );
-  }
-
   return (
     <div className="container">
       <h1 className="title">Wordle Clone</h1>
+      <p className="welcome-text">Welcome, {username}!</p>
       <button onClick={() => router.push("/scoreboard")} className="scoreboard-button">View Scoreboard</button>
 
       <label className="dark-mode-switch">
@@ -144,18 +157,33 @@ export default function Home() {
       </label>
 
       <div className="grid">
-        {guesses.map((guess, rowIndex) => (
-          <div key={rowIndex} className="grid-row">
-            {Array.from({ length: WORD_LENGTH }).map((_, colIndex) => {
-              const letter = guess[colIndex] || "";
-              const styles = guess ? checkGuess(guess)[colIndex] : "border-gray-400";
-              return <div key={colIndex} className={`cell ${styles}`}>{letter}</div>;
-            })}
-          </div>
-        ))}
+        {guesses.map((guess, rowIndex) => {
+          const tileColors = guess ? checkGuess(guess) : Array(WORD_LENGTH).fill("border-gray-400");
+
+          return (
+            <div key={rowIndex} className="grid-row">
+              {Array.from({ length: WORD_LENGTH }).map((_, colIndex) => {
+                const letter = guess[colIndex] || "";
+                return <div key={colIndex} className={`cell ${tileColors[colIndex]}`}>{letter}</div>;
+              })}
+            </div>
+          );
+        })}
       </div>
 
       <input type="text" value={currentGuess} onChange={(e) => setCurrentGuess(e.target.value.toUpperCase())} onKeyPress={handleKeyPress} className="input-box" maxLength={WORD_LENGTH} />
+
+      <div className="keyboard">
+        {KEYBOARD_LAYOUT.map((row, rowIndex) => (
+          <div key={rowIndex} className="keyboard-row">
+            {row.split("").map((key) => (
+              <button key={key} className={`key ${keyStatuses[key] || ""}`}>
+                {key}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
 
       {errorMessage && <p className="error-message">{errorMessage}</p>}
 

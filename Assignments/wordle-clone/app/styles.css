@@ -15,17 +15,6 @@ html.dark {
 }
 
 /* ✅ Full-Screen Centering */
-main {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    width: 100vw;
-    padding: 20px;
-    text-align: center;
-    gap: 20px;
-  }
 .container {
   display: flex;
   flex-direction: column;
@@ -109,7 +98,7 @@ html.dark .title {
 
 /* ✅ Letter in Wrong Spot (Yellow) */
 .bg-yellow-500 {
-  background-color: #ffd000 !important;
+  background-color: #c9b458 !important;
   color: black !important;
 }
 
@@ -215,79 +204,55 @@ html.dark .win-message {
   height: 26px;
 }
 
-.dark-mode-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
+/* ✅ Virtual Keyboard Styling */
+.keyboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+  gap: 6px;
 }
 
-.slider {
-  position: absolute;
+.keyboard-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.key {
+  padding: 15px 20px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 5px;
+  border: none;
+  background-color: #a0a0a0;
+  color: white;
   cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  transition: 0.4s;
-  border-radius: 20px;
+  transition: background-color 0.2s ease-in-out;
+  width: 45px;
+  height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 4px;
-  bottom: 4px;
-  background-color: white;
-  transition: 0.4s;
-  border-radius: 50%;
+.large-key {
+  width: 80px;
 }
 
-input:checked + .slider {
-  background-color: #007bff;
+/* ✅ Dark Mode Keyboard */
+html.dark .key {
+  background-color: #3a3a3c;
 }
 
-input:checked + .slider:before {
-  transform: translateX(24px);
+html.dark .bg-green-500 {
+  background-color: #538d4e !important;
 }
 
-.start-button {
-    margin-top: 15px;
-    padding: 12px 20px;
-    font-size: 1rem;
-    font-weight: bold;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: background-color 0.3s ease-in-out;
-  }
-  
-  .start-button:hover {
-    background-color: #0056b3;
-  }
-  
-  /* ✅ Dark Mode Toggle */
-  .dark-mode-switch {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    display: inline-block;
-    width: 50px;
-    height: 26px;
-  }
-  
-  .welcome-text {
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: #333;
-  }
-  
-  html.dark .welcome-text {
-    color: #ddd;
-  }
-  
+html.dark .bg-yellow-500 {
+  background-color: #b59f3b !important;
+}
+
+html.dark .bg-gray-400 {
+  background-color: #3a3a3c !important;
+}
