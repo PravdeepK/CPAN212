@@ -1,0 +1,339 @@
+/* Global Reset: Remove margin and padding, and ensure consistent box-sizing */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Body Styles */
+body {
+  font-family: "Georgia", serif;
+  background-color: #f4f1ea;
+  color: #333;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: baseline;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex-grow: 1; /* Expands to fill available space */
+}
+
+/* Heading 2 styles */
+h2 {
+  color: #6b4a30;
+  font-size: 2rem;
+  border-bottom: 2px solid #6b4a30;
+  text-align: center; /* Center the title */
+  margin-bottom: 20px;
+}
+
+/* Navigation Bar (Top Bar) */
+.navigation {
+  background-color: #c49d68;
+  color: #fff;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.brand-title {
+  font-size: 1.5rem;
+}
+
+nav a {
+  color: #fff;
+  text-decoration: none;
+  margin: 0 10px;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+/* Footer */
+.footer {
+  height: 3rem; /* Footer height */
+  background-color: #c49d68;
+  color: #fff;
+  text-align: center;
+  line-height: 3rem; /* Centers text vertically */
+}
+
+
+/* Page containers: Add Book, All Books, etc. */
+.add-book,
+.all-books {
+  padding: 30px;
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: #f4f1ea;
+  color: #333;
+  font-family: "Georgia", serif;
+}
+
+/* Form container */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* Input Fields */
+input[type="email"],
+input[type="password"],
+input[type="text"],
+textarea {
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+/* Submit Button */
+input[type="submit"] {
+  padding: 10px;
+  font-size: 1.2rem;
+  background-color: #c49d68;
+  color: #f4f1ea;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%; /* Make button full-width */
+}
+
+input[type="submit"]:hover {
+  background-color: #6b4a30;
+}
+
+/* Book List Grid Layout (All Books page) */
+.book-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+/* Book Card Styles */
+.book-card {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  text-align: center;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.book-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.book-card h3 {
+  font-size: 1.5rem;
+  color: #6b4a30;
+  margin: 10px 0;
+}
+
+.book-card p {
+  margin: 10px 0;
+  font-size: 1rem;
+}
+
+.book-card a {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 10px 15px;
+  background-color: #c49d68;
+  color: #f4f1ea;
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.book-card a:hover {
+  background-color: #6b4a30;
+}
+
+/* Error message styling */
+.error {
+  color: red;
+  font-size: 1.1rem;
+  margin-top: -10px;
+  margin-bottom: 20px;
+}
+
+/* Flexbox form styling */
+.add-book form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.add-book input,
+.add-book textarea {
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  width: 100%;
+  background-color: #fff;
+  color: #333;
+}
+
+.add-book input:focus,
+.add-book textarea:focus {
+  border-color: #c49d68;
+  outline: none;
+}
+
+.add-book button {
+  padding: 12px 20px;
+  background-color: #c49d68;
+  color: #f4f1ea;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.add-book button:hover {
+  background-color: #6b4a30;
+}
+
+.add-book label {
+  font-size: 1.1rem;
+  color: #6b4a30;
+}
+
+/* Register Page container */
+.register {
+  padding: 30px;
+  max-width: 500px;
+  margin: 0 auto; /* Center the form */
+  background-color: #f4f1ea;
+  color: #333;
+  border-radius: 8px;
+}
+
+/* Heading (title) styling */
+.register h2 {
+  color: #6b4a30;
+  font-size: 2rem;
+  border-bottom: 2px solid #6b4a30;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* Form input styles */
+.register input[type="text"],
+.register input[type="email"],
+.register input[type="password"] {
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+/* Button styling */
+.register button {
+  padding: 10px;
+  font-size: 1.2rem;
+  background-color: #c49d68;
+  color: #f4f1ea;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%; /* Ensure button takes up full width */
+  transition: background-color 0.3s;
+}
+
+/* Button hover effect */
+.register button:hover {
+  background-color: #6b4a30;
+}
+
+/* Ensure responsive form */
+@media (max-width: 600px) {
+  .register {
+    padding: 15px;
+    max-width: 100%;
+  }
+}
+
+/* Login Page container */
+.login {
+  padding: 30px;
+  max-width: 500px;
+  margin: 0 auto; /* Center the form */
+  background-color: #f4f1ea;
+  color: #333;
+  border-radius: 8px;
+}
+
+/* Heading (title) styling */
+.login h2 {
+  color: #6b4a30;
+  font-size: 2rem;
+  border-bottom: 2px solid #6b4a30;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* Form input styles */
+.login input[type="email"],
+.login input[type="password"] {
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+/* Button styling */
+.login button {
+  padding: 10px;
+  font-size: 1.2rem;
+  background-color: #c49d68;
+  color: #f4f1ea;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%; /* Ensure button takes up full width */
+  transition: background-color 0.3s;
+}
+
+/* Button hover effect */
+.login button:hover {
+  background-color: #6b4a30;
+}
+
+/* Error message styling */
+.login .error {
+  color: red;
+  font-size: 1.1rem;
+  text-align: center;
+  margin-top: 10px;
+}
+
+/* Ensure responsive form */
+@media (max-width: 600px) {
+  .login {
+    padding: 15px;
+    max-width: 100%;
+  }
+}
