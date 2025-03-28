@@ -30,7 +30,6 @@ const AllBooks = () => {
             <div key={book._id} className="book-card">
               <h3>{book.title}</h3>
               <p>Author: {book.author}</p>
-              <p>Price: ${book.price.toFixed(2)}</p>
               <Link to={`/books/${book._id}`}>View Details</Link>
             </div>
           ))}
