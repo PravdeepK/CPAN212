@@ -6,19 +6,19 @@ const recipeRouter = require('./routes/recipes_router');
 const app = express();
 const PORT = 8001;
 
-//midware
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-//mongodb connection
-mongoose.connect('mongodb+srv://pravdeepkk:ygzsE5kCHDKEdOZa@cluster0.vbbsy.mongodb.net/', {
+mongoose.connect('mongodb+srv://pravdeepkk:ygzsE5kCHDKEdOZa@cluster0.vbbsy.mongodb.net/recipeApp?retryWrites=true&w=majority', {
   useNewUrlParser: true,
   useUnifiedTopology: true
-}).then(() => console.log('Connected to MongoDB'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+})
+.then(() => console.log('Connected'))
+.catch((err) => console.error('MongoDB connection error:', err));
 
 app.use('/recipe', recipeRouter);
 
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
