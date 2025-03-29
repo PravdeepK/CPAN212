@@ -20,5 +20,5 @@ mongoose.connect('mongodb+srv://pravdeepkk:ygzsE5kCHDKEdOZa@cluster0.vbbsy.mongo
 app.use('/recipe', recipeRouter);
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });
