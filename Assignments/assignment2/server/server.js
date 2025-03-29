@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 //mongodb connection
-mongoose.connect('mongodb://localhost:27017/recipeApp', {
+mongoose.connect('mongodb+srv://pravdeepkk:ygzsE5kCHDKEdOZa@cluster0.vbbsy.mongodb.net/', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => console.log('Connected to MongoDB'))
