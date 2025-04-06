@@ -40,3 +40,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Firebase config
+/config/firebaseConfig.js
