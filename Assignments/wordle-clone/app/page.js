@@ -4,6 +4,18 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../config/firebaseConfig";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  getDocs,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+
+const db = getFirestore();
 
 const WORD_LENGTH = 5;
 const MAX_TRIES = 6;
@@ -56,11 +68,13 @@ export default function Home() {
     setErrorMessage("");
     try {
       const res = await fetch("/api/word");
-      if (!res.ok) return setErrorMessage("❌ Failed to fetch word");
+      if (!res.ok) return setErrorMessage("Failed to fetch word");
 
       const data = await res.json();
       if (data.word) {
         setSecretWord(data.word);
+        console.log("Secret Wordle Answer:", data.word);
+
         setGuesses(Array(MAX_TRIES).fill(""));
         setKeyStatuses({});
         setGameOver(false);
@@ -68,7 +82,7 @@ export default function Home() {
         setCurrentGuess("");
       }
     } catch (error) {
-      setErrorMessage("❌ Network error");
+      setErrorMessage("Network error");
     } finally {
       setLoading(false);
     }
@@ -85,6 +99,27 @@ export default function Home() {
       return data.valid;
     } catch (error) {
       return false;
+    }
+  };
+
+  const saveGameResult = async (result) => {
+    const user = auth.currentUser;
+    if (!user || !user.displayName) return;
+
+    const username = user.displayName;
+    const gamesRef = collection(db, "users", username, "games");
+
+    await addDoc(gamesRef, {
+      result,
+      word: secretWord,
+      timestamp: new Date(),
+    });
+
+    const q = query(gamesRef, orderBy("timestamp", "desc"));
+    const snapshot = await getDocs(q);
+    const extraGames = snapshot.docs.slice(10);
+    for (const gameDoc of extraGames) {
+      await deleteDoc(doc(db, "users", username, "games", gameDoc.id));
     }
   };
 
@@ -108,7 +143,7 @@ export default function Home() {
 
       const isValidWord = await validateWord(currentGuess);
       if (!isValidWord) {
-        setErrorMessage("❌ Not a valid word! Please enter a real word.");
+        setErrorMessage("Not a valid word! Please enter a real word.");
         return;
       }
 
@@ -139,8 +174,10 @@ export default function Home() {
       if (currentGuess === secretWord) {
         setWon(true);
         setGameOver(true);
+        await saveGameResult("win");
       } else if (newGuesses.filter((g) => g !== "").length >= MAX_TRIES) {
         setGameOver(true);
+        await saveGameResult("lose");
       }
     }
   };
@@ -213,7 +250,7 @@ export default function Home() {
 
       {gameOver && (
         <p className="game-over">
-          {won ? "🎉 Congrats! You guessed the word!" : `❌ Game Over! The word was ${secretWord}`}
+          {won ? "Congrats! You guessed the word!" : `Game Over! The word was ${secretWord}`}
         </p>
       )}
 

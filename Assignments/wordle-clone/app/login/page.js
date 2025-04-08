@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [inputIdentifier, setInputIdentifier] = useState(""); // username OR email
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState(""); // Only for sign-up
+  const [username, setUsername] = useState(""); // For sign-up
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -28,6 +28,7 @@ export default function LoginPage() {
       if (isLoginMode) {
         let email = inputIdentifier;
 
+        // If user is logging in with username, look up email
         if (!inputIdentifier.includes("@")) {
           const userDoc = await getDoc(doc(db, "usernames", inputIdentifier));
           if (!userDoc.exists()) {
@@ -40,10 +41,24 @@ export default function LoginPage() {
         await signInWithEmailAndPassword(auth, email, password);
         router.push("/");
       } else {
-        const userCred = await createUserWithEmailAndPassword(auth, inputIdentifier, password);
-        await updateProfile(userCred.user, { displayName: username });
+        // ✅ Check if username is already taken
+        const usernameRef = doc(db, "usernames", username);
+        const existingUser = await getDoc(usernameRef);
+        if (existingUser.exists()) {
+          setError("❌ Username already taken. Please choose another.");
+          return;
+        }
 
-        await setDoc(doc(db, "usernames", username), {
+        // ✅ Create account with email + password
+        const userCred = await createUserWithEmailAndPassword(auth, inputIdentifier, password);
+
+        // ✅ Set display name to username
+        await updateProfile(userCred.user, {
+          displayName: username,
+        });
+
+        // ✅ Save username → email mapping
+        await setDoc(usernameRef, {
           email: inputIdentifier,
           uid: userCred.user.uid,
         });
