@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth } from "@/firebaseConfig";
 
 const WORD_LENGTH = 5;
 const MAX_TRIES = 6;
@@ -9,7 +11,6 @@ const KEYBOARD_LAYOUT = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 export default function Home() {
   const router = useRouter();
   const [username, setUsername] = useState("");
-  const [isUsernameSet, setIsUsernameSet] = useState(false);
   const [guesses, setGuesses] = useState(Array(MAX_TRIES).fill(""));
   const [currentGuess, setCurrentGuess] = useState("");
   const [secretWord, setSecretWord] = useState("");
@@ -21,18 +22,21 @@ export default function Home() {
   const [keyStatuses, setKeyStatuses] = useState({});
 
   useEffect(() => {
-    fetchWord();
-    const savedUsername = localStorage.getItem("username");
-    if (savedUsername) {
-      setUsername(savedUsername);
-      setIsUsernameSet(true);
-    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.push("/login");
+      } else {
+        setUsername(user.email);
+        const savedTheme = localStorage.getItem("darkMode");
+        if (savedTheme === "true") {
+          setDarkMode(true);
+          document.documentElement.classList.add("dark");
+        }
+        fetchWord();
+      }
+    });
 
-    const savedTheme = localStorage.getItem("darkMode");
-    if (savedTheme === "true") {
-      setDarkMode(true);
-      document.documentElement.classList.add("dark");
-    }
+    return () => unsubscribe();
   }, []);
 
   const toggleDarkMode = () => {
@@ -44,11 +48,6 @@ export default function Home() {
     });
   };
 
-  const setUser = () => {
-    localStorage.setItem("username", username);
-    setIsUsernameSet(true);
-  };
-
   const fetchWord = async () => {
     setLoading(true);
     setErrorMessage("");
@@ -58,7 +57,6 @@ export default function Home() {
 
       const data = await res.json();
       if (data.word) {
-        console.log("✅ Secret Word:", data.word);
         setSecretWord(data.word);
         setGuesses(Array(MAX_TRIES).fill(""));
         setKeyStatuses({});
@@ -88,17 +86,15 @@ export default function Home() {
   };
 
   const checkGuess = (guess) => {
-    let tileColors = Array(WORD_LENGTH).fill("bg-gray-400 text-white"); // Default to gray
-
+    let tileColors = Array(WORD_LENGTH).fill("bg-gray-400 text-white");
     guess.split("").forEach((letter, index) => {
       if (letter === secretWord[index]) {
-        tileColors[index] = "bg-green-500 text-white"; // ✅ Correct position
+        tileColors[index] = "bg-green-500 text-white";
       } else if (secretWord.includes(letter)) {
-        tileColors[index] = "bg-yellow-500 text-black"; // 🟡 Wrong position
+        tileColors[index] = "bg-yellow-500 text-black";
       }
     });
-
-    return tileColors; // ✅ Only returns colors, does NOT update state
+    return tileColors;
   };
 
   const handleKeyPress = async (e) => {
@@ -117,17 +113,16 @@ export default function Home() {
         newGuesses[nextEmptyRow] = currentGuess;
         setGuesses(newGuesses);
 
-        // ✅ Update key colors separately to prevent re-render issues
         let newKeyStatuses = { ...keyStatuses };
         currentGuess.split("").forEach((letter, index) => {
           if (letter === secretWord[index]) {
-            newKeyStatuses[letter] = "bg-green-500 text-white"; // ✅ Correct position
+            newKeyStatuses[letter] = "bg-green-500 text-white";
           } else if (secretWord.includes(letter)) {
             if (newKeyStatuses[letter] !== "bg-green-500 text-white") {
-              newKeyStatuses[letter] = "bg-yellow-500 text-black"; // 🟡 Wrong position
+              newKeyStatuses[letter] = "bg-yellow-500 text-black";
             }
           } else {
-            newKeyStatuses[letter] = "bg-gray-400 text-white"; // ❌ Not in word
+            newKeyStatuses[letter] = "bg-gray-400 text-white";
           }
         });
 
@@ -150,6 +145,15 @@ export default function Home() {
       <h1 className="title">Wordle Clone</h1>
       <p className="welcome-text">Welcome, {username}!</p>
       <button onClick={() => router.push("/scoreboard")} className="scoreboard-button">View Scoreboard</button>
+      <button
+        className="scoreboard-button"
+        onClick={() => {
+          signOut(auth);
+          router.push("/login");
+        }}
+      >
+        Logout
+      </button>
 
       <label className="dark-mode-switch">
         <input type="checkbox" checked={darkMode} onChange={toggleDarkMode} />
@@ -171,7 +175,14 @@ export default function Home() {
         })}
       </div>
 
-      <input type="text" value={currentGuess} onChange={(e) => setCurrentGuess(e.target.value.toUpperCase())} onKeyPress={handleKeyPress} className="input-box" maxLength={WORD_LENGTH} />
+      <input
+        type="text"
+        value={currentGuess}
+        onChange={(e) => setCurrentGuess(e.target.value.toUpperCase())}
+        onKeyPress={handleKeyPress}
+        className="input-box"
+        maxLength={WORD_LENGTH}
+      />
 
       <div className="keyboard">
         {KEYBOARD_LAYOUT.map((row, rowIndex) => (
@@ -187,7 +198,11 @@ export default function Home() {
 
       {errorMessage && <p className="error-message">{errorMessage}</p>}
 
-      {gameOver && <p className="game-over">{won ? "🎉 Congrats! You guessed the word!" : `❌ Game Over! The word was ${secretWord}`}</p>}
+      {gameOver && (
+        <p className="game-over">
+          {won ? "🎉 Congrats! You guessed the word!" : `❌ Game Over! The word was ${secretWord}`}
+        </p>
+      )}
 
       <button onClick={fetchWord} className="restart-button">Restart Game</button>
     </div>
