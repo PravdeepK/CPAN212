@@ -16,14 +16,13 @@ import {
 } from "firebase/firestore";
 
 const db = getFirestore();
-
-const WORD_LENGTH = 5;
 const MAX_TRIES = 6;
 const KEYBOARD_LAYOUT = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 
 export default function Home() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(null); // null initially to prevent early rendering
+  const [difficulty, setDifficulty] = useState(5);
   const [guesses, setGuesses] = useState(Array(MAX_TRIES).fill(""));
   const [currentGuess, setCurrentGuess] = useState("");
   const [secretWord, setSecretWord] = useState("");
@@ -37,7 +36,7 @@ export default function Home() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
-        router.push("/login");
+        router.replace("/login");
       } else {
         setUsername(user.displayName || "Player");
 
@@ -52,29 +51,32 @@ export default function Home() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [difficulty]);
 
   const toggleDarkMode = () => {
-    setDarkMode((prevMode) => {
-      const newMode = !prevMode;
-      localStorage.setItem("darkMode", newMode);
-      document.documentElement.classList.toggle("dark", newMode);
-      return newMode;
-    });
+    const newMode = !darkMode;
+    localStorage.setItem("darkMode", newMode);
+    document.documentElement.classList.toggle("dark", newMode);
+    setDarkMode(newMode);
   };
 
   const fetchWord = async () => {
     setLoading(true);
     setErrorMessage("");
     try {
-      const res = await fetch("/api/word");
+      const res = await fetch(`/api/word?length=${difficulty}`);
       if (!res.ok) return setErrorMessage("Failed to fetch word");
 
       const data = await res.json();
       if (data.word) {
-        setSecretWord(data.word);
-        console.log("Secret Wordle Answer:", data.word);
+        if (data.word.length !== difficulty) {
+          setErrorMessage(`Expected ${difficulty}-letter word, but got ${data.word.length}. Please try again.`);
+          console.warn(`Mismatch: received "${data.word}"`);
+          return;
+        }
 
+        setSecretWord(data.word);
+        console.log(`Answer (${data.word.length} letters): ${data.word}`);
         setGuesses(Array(MAX_TRIES).fill(""));
         setKeyStatuses({});
         setGameOver(false);
@@ -107,11 +109,12 @@ export default function Home() {
     if (!user || !user.displayName) return;
 
     const username = user.displayName;
-    const gamesRef = collection(db, "users", username, "games");
+    const gamesRef = collection(db, "users", username, "games", difficulty.toString(), "entries");
 
     await addDoc(gamesRef, {
       result,
       word: secretWord,
+      difficulty,
       timestamp: new Date(),
     });
 
@@ -119,12 +122,12 @@ export default function Home() {
     const snapshot = await getDocs(q);
     const extraGames = snapshot.docs.slice(10);
     for (const gameDoc of extraGames) {
-      await deleteDoc(doc(db, "users", username, "games", gameDoc.id));
+      await deleteDoc(doc(db, "users", username, "games", difficulty.toString(), "entries", gameDoc.id));
     }
   };
 
   const checkGuess = (guess) => {
-    let tileColors = Array(WORD_LENGTH).fill("bg-gray-400 text-white");
+    let tileColors = Array(difficulty).fill("bg-gray-400 text-white");
 
     guess.split("").forEach((letter, index) => {
       if (letter === secretWord[index]) {
@@ -138,7 +141,9 @@ export default function Home() {
   };
 
   const handleKeyPress = async (e) => {
-    if (e.key === "Enter" && currentGuess.length === WORD_LENGTH) {
+    if (gameOver) return;
+
+    if (e.key === "Enter" && currentGuess.length === difficulty) {
       setErrorMessage("");
 
       const isValidWord = await validateWord(currentGuess);
@@ -182,10 +187,35 @@ export default function Home() {
     }
   };
 
+  const handleVirtualKey = async (key) => {
+    if (gameOver) return;
+
+    if (key === "ENTER") {
+      await handleKeyPress({ key: "Enter" });
+    } else if (key === "⌫") {
+      setCurrentGuess((prev) => prev.slice(0, -1));
+    } else if (currentGuess.length < difficulty) {
+      setCurrentGuess((prev) => prev + key);
+    }
+  };
+
+  if (!username) return null; // prevent UI flicker during auth
+
   return (
     <div className="flex flex-col justify-center items-center min-h-screen w-full text-center gap-6">
       <h1 className="title">Wordle Clone</h1>
       <p className="welcome-text">Welcome, {username}!</p>
+
+      <div className="flex items-center gap-4">
+        <label>Difficulty: {difficulty} letters</label>
+        <input
+          type="range"
+          min="3"
+          max="10"
+          value={difficulty}
+          onChange={(e) => setDifficulty(parseInt(e.target.value))}
+        />
+      </div>
 
       <button onClick={() => router.push("/scoreboard")} className="scoreboard-button">
         View Scoreboard
@@ -193,9 +223,9 @@ export default function Home() {
 
       <button
         className="scoreboard-button"
-        onClick={() => {
-          signOut(auth);
-          router.push("/login");
+        onClick={async () => {
+          await signOut(auth);
+          router.replace("/login");
         }}
       >
         Logout
@@ -208,11 +238,11 @@ export default function Home() {
 
       <div className="grid">
         {guesses.map((guess, rowIndex) => {
-          const tileColors = guess ? checkGuess(guess) : Array(WORD_LENGTH).fill("border-gray-400");
+          const tileColors = guess ? checkGuess(guess) : Array(difficulty).fill("border-gray-400");
 
           return (
             <div key={rowIndex} className="grid-row">
-              {Array.from({ length: WORD_LENGTH }).map((_, colIndex) => {
+              {Array.from({ length: difficulty }).map((_, colIndex) => {
                 const letter = guess[colIndex] || "";
                 return (
                   <div key={colIndex} className={`cell ${tileColors[colIndex]}`}>
@@ -231,19 +261,23 @@ export default function Home() {
         onChange={(e) => setCurrentGuess(e.target.value.toUpperCase())}
         onKeyPress={handleKeyPress}
         className="input-box"
-        maxLength={WORD_LENGTH}
+        maxLength={difficulty}
       />
 
       <div className="keyboard">
         {KEYBOARD_LAYOUT.map((row, rowIndex) => (
           <div key={rowIndex} className="keyboard-row">
             {row.split("").map((key) => (
-              <button key={key} className={`key ${keyStatuses[key] || ""}`}>
+              <button key={key} className={`key ${keyStatuses[key] || ""}`} onClick={() => handleVirtualKey(key)}>
                 {key}
               </button>
             ))}
           </div>
         ))}
+        <div className="keyboard-row">
+          <button className="key large-key" onClick={() => handleVirtualKey("ENTER")}>Enter</button>
+          <button className="key large-key" onClick={() => handleVirtualKey("⌫")}>⌫</button>
+        </div>
       </div>
 
       {errorMessage && <p className="error-message">{errorMessage}</p>}

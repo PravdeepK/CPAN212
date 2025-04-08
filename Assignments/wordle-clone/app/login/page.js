@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [inputIdentifier, setInputIdentifier] = useState(""); // username OR email
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState(""); // For sign-up
+  const [username, setUsername] = useState(""); // Only for sign-up
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -28,11 +28,10 @@ export default function LoginPage() {
       if (isLoginMode) {
         let email = inputIdentifier;
 
-        // If user is logging in with username, look up email
         if (!inputIdentifier.includes("@")) {
-          const userDoc = await getDoc(doc(db, "usernames", inputIdentifier));
+          const userDoc = await getDoc(doc(db, "users", inputIdentifier));
           if (!userDoc.exists()) {
-            setError("❌ Username not found.");
+            setError("Username not found.");
             return;
           }
           email = userDoc.data().email;
@@ -41,24 +40,24 @@ export default function LoginPage() {
         await signInWithEmailAndPassword(auth, email, password);
         router.push("/");
       } else {
-        // ✅ Check if username is already taken
-        const usernameRef = doc(db, "usernames", username);
-        const existingUser = await getDoc(usernameRef);
+        // Check for existing user by username
+        const userDocRef = doc(db, "users", username);
+        const existingUser = await getDoc(userDocRef);
         if (existingUser.exists()) {
-          setError("❌ Username already taken. Please choose another.");
+          setError("Username already taken. Please choose another.");
           return;
         }
 
-        // ✅ Create account with email + password
+        // Create Firebase Auth account
         const userCred = await createUserWithEmailAndPassword(auth, inputIdentifier, password);
 
-        // ✅ Set display name to username
+        // Set displayName
         await updateProfile(userCred.user, {
           displayName: username,
         });
 
-        // ✅ Save username → email mapping
-        await setDoc(usernameRef, {
+        // Save user info under /users/{username}
+        await setDoc(userDocRef, {
           email: inputIdentifier,
           uid: userCred.user.uid,
         });
@@ -67,10 +66,14 @@ export default function LoginPage() {
         setInputIdentifier("");
         setPassword("");
         setUsername("");
-        setSuccessMsg("✅ Account created! Please log in.");
+        setSuccessMsg("Account created! Please log in.");
       }
     } catch (err) {
-      setError(err.message);
+      const fallback = err.message || "Something went wrong";
+      const formatted = err.code === "auth/email-already-in-use"
+        ? "Error: Email already in use"
+        : "Error: " + fallback;
+      setError(formatted);
     }
   };
 
@@ -104,7 +107,7 @@ export default function LoginPage() {
         onChange={(e) => setPassword(e.target.value)}
       />
 
-      {error && <p className="error-message">{error}</p>}
+      {error && <div className="pretty-error">{error}</div>}
       {successMsg && <p className="win-message">{successMsg}</p>}
 
       <button onClick={handleAuth} className="restart-button">

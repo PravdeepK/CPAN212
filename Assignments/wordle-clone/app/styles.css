@@ -60,7 +60,7 @@ html.dark .title {
   background-color: #e6b800;
 }
 
-/* ✅ Fix Grid Layout */
+/* ✅ Grid Layout */
 .grid {
   display: flex;
   flex-direction: column;
@@ -69,14 +69,13 @@ html.dark .title {
   margin-top: 20px;
 }
 
-/* ✅ Ensure Rows Are Centered */
 .grid-row {
   display: flex;
   gap: 8px;
   justify-content: center;
 }
 
-/* ✅ Properly Styled Tiles */
+/* ✅ Tile Style */
 .cell {
   width: 50px;
   height: 50px;
@@ -90,35 +89,36 @@ html.dark .title {
   transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
 }
 
-/* ✅ Correct Guess (Green) */
+/* ✅ Tile Colors */
 .bg-green-500 {
   background-color: #6aaa64 !important;
   color: white !important;
 }
 
-/* ✅ Letter in Wrong Spot (Yellow) */
 .bg-yellow-500 {
   background-color: #c9b458 !important;
   color: black !important;
 }
 
-/* ✅ Wrong Letter (Gray) */
 .bg-gray-400 {
   background-color: #787c7e !important;
   color: white !important;
 }
 
-/* ✅ Dark Mode Tiles */
+/* ✅ Dark Mode Tile + Key Colors */
 html.dark .bg-green-500 {
   background-color: #538d4e !important;
+  color: white !important;
 }
 
 html.dark .bg-yellow-500 {
   background-color: #b59f3b !important;
+  color: black !important;
 }
 
 html.dark .bg-gray-400 {
   background-color: #3a3a3c !important;
+  color: white !important;
 }
 
 /* ✅ Input Box */
@@ -142,7 +142,7 @@ html.dark .input-box {
   border-color: white;
 }
 
-/* ✅ Restart Button Styling */
+/* ✅ Restart Button */
 .restart-button {
   margin-top: 20px;
   padding: 12px 20px;
@@ -193,7 +193,7 @@ html.dark .win-message {
   color: #00ff00;
 }
 
-/* ✅ Dark Mode Toggle Switch */
+/* ✅ Dark Mode Toggle */
 .dark-mode-switch {
   position: absolute;
   top: 20px;
@@ -203,7 +203,7 @@ html.dark .win-message {
   height: 26px;
 }
 
-/* ✅ Virtual Keyboard Styling */
+/* ✅ Virtual Keyboard */
 .keyboard {
   display: flex;
   flex-direction: column;
@@ -239,19 +239,32 @@ html.dark .win-message {
   width: 80px;
 }
 
-/* ✅ Dark Mode Keyboard */
+/* ✅ Keyboard default in dark mode: white */
 html.dark .key {
-  background-color: #3a3a3c;
+  background-color: white;
+  color: black;
 }
 
-html.dark .bg-green-500 {
-  background-color: #538d4e !important;
+/* ✅ Pretty Firebase error */
+.pretty-error {
+  background-color: #ffe6e6;
+  color: #b30000;
+  padding: 10px 16px;
+  border-left: 5px solid #ff4d4d;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  margin-top: 10px;
+  max-width: 320px;
 }
 
-html.dark .bg-yellow-500 {
-  background-color: #b59f3b !important;
+.active-button {
+  background-color: #007bff !important;
+  color: white !important;
 }
 
-html.dark .bg-gray-400 {
-  background-color: #3a3a3c !important;
+html.dark .active-button {
+  background-color: #00aaff !important;
+  color: black !important;
 }
+
