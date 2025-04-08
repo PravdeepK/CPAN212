@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [inputIdentifier, setInputIdentifier] = useState(""); // username OR email
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState(""); // Only for sign-up
+  const [username, setUsername] = useState(""); // For sign-up
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -28,8 +28,9 @@ export default function LoginPage() {
       if (isLoginMode) {
         let email = inputIdentifier;
 
+        // If logging in with username, convert to lowercase and fetch email
         if (!inputIdentifier.includes("@")) {
-          const userDoc = await getDoc(doc(db, "users", inputIdentifier));
+          const userDoc = await getDoc(doc(db, "users", inputIdentifier.toLowerCase()));
           if (!userDoc.exists()) {
             setError("Username not found.");
             return;
@@ -40,8 +41,10 @@ export default function LoginPage() {
         await signInWithEmailAndPassword(auth, email, password);
         router.push("/");
       } else {
-        // Check for existing user by username
-        const userDocRef = doc(db, "users", username);
+        const usernameKey = username.toLowerCase(); // ✅ force lowercase
+
+        // Check if username already exists
+        const userDocRef = doc(db, "users", usernameKey);
         const existingUser = await getDoc(userDocRef);
         if (existingUser.exists()) {
           setError("Username already taken. Please choose another.");
@@ -51,12 +54,12 @@ export default function LoginPage() {
         // Create Firebase Auth account
         const userCred = await createUserWithEmailAndPassword(auth, inputIdentifier, password);
 
-        // Set displayName
+        // Save original-case name in displayName
         await updateProfile(userCred.user, {
-          displayName: username,
+          displayName: username, // e.g., "Prav"
         });
 
-        // Save user info under /users/{username}
+        // Save lowercase key to Firestore
         await setDoc(userDocRef, {
           email: inputIdentifier,
           uid: userCred.user.uid,
