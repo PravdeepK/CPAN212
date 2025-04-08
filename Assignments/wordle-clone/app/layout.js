@@ -1,4 +1,4 @@
-import "./styles.css"; // ✅ Import global styles
+import "./styles.css";
 
 export default function Layout({ children }) {
   return (
@@ -7,8 +7,10 @@ export default function Layout({ children }) {
         <title>Wordle Clone</title>
         <meta name="description" content="A simple Wordle clone built with Next.js" />
       </head>
-      <body>
-        <main>{children}</main>
+      <body style={{ margin: 0, padding: 0 }}>
+        <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+          {children}
+        </div>
       </body>
     </html>
   );

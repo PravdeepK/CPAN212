@@ -1,8 +1,9 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "@/firebaseConfig";
+import { auth } from "../config/firebaseConfig";
 
 const WORD_LENGTH = 5;
 const MAX_TRIES = 6;
@@ -26,12 +27,14 @@ export default function Home() {
       if (!user) {
         router.push("/login");
       } else {
-        setUsername(user.email);
+        setUsername(user.displayName || "Player");
+
         const savedTheme = localStorage.getItem("darkMode");
         if (savedTheme === "true") {
           setDarkMode(true);
           document.documentElement.classList.add("dark");
         }
+
         fetchWord();
       }
     });
@@ -87,6 +90,7 @@ export default function Home() {
 
   const checkGuess = (guess) => {
     let tileColors = Array(WORD_LENGTH).fill("bg-gray-400 text-white");
+
     guess.split("").forEach((letter, index) => {
       if (letter === secretWord[index]) {
         tileColors[index] = "bg-green-500 text-white";
@@ -94,6 +98,7 @@ export default function Home() {
         tileColors[index] = "bg-yellow-500 text-black";
       }
     });
+
     return tileColors;
   };
 
@@ -141,10 +146,14 @@ export default function Home() {
   };
 
   return (
-    <div className="container">
+    <div className="flex flex-col justify-center items-center min-h-screen w-full text-center gap-6">
       <h1 className="title">Wordle Clone</h1>
       <p className="welcome-text">Welcome, {username}!</p>
-      <button onClick={() => router.push("/scoreboard")} className="scoreboard-button">View Scoreboard</button>
+
+      <button onClick={() => router.push("/scoreboard")} className="scoreboard-button">
+        View Scoreboard
+      </button>
+
       <button
         className="scoreboard-button"
         onClick={() => {
@@ -168,7 +177,11 @@ export default function Home() {
             <div key={rowIndex} className="grid-row">
               {Array.from({ length: WORD_LENGTH }).map((_, colIndex) => {
                 const letter = guess[colIndex] || "";
-                return <div key={colIndex} className={`cell ${tileColors[colIndex]}`}>{letter}</div>;
+                return (
+                  <div key={colIndex} className={`cell ${tileColors[colIndex]}`}>
+                    {letter}
+                  </div>
+                );
               })}
             </div>
           );
@@ -204,7 +217,9 @@ export default function Home() {
         </p>
       )}
 
-      <button onClick={fetchWord} className="restart-button">Restart Game</button>
+      <button onClick={fetchWord} className="restart-button">
+        Restart Game
+      </button>
     </div>
   );
 }

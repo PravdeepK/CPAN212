@@ -189,7 +189,6 @@ html.dark .restart-button:hover {
   font-weight: bold;
 }
 
-/* ✅ Dark Mode Win Message */
 html.dark .win-message {
   color: #00ff00;
 }
