@@ -1,41 +1,67 @@
-/* Global Reset */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ✅ Light & Dark Mode Background */
+html {
+  background-color: white;
+  color: black;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
 }
 
-body {
-  font-family: 'Arial', sans-serif;
-  background: #fff;
-  color: #000;
-  padding: 20px;
-  text-align: center;
+html.dark {
+  background-color: #121212;
+  color: white;
 }
 
-/* Game Board Grid */
-.board {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  max-width: 300px;
-  margin: 20px auto;
-}
-
-.cell {
-  width: 100%;
-  aspect-ratio: 1;
-  border: 2px solid #ccc;
-  font-size: 2rem;
-  font-weight: bold;
+/* ✅ Full-Screen Centering */
+.container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  text-transform: uppercase;
+  height: 100vh;
+  width: 100vw;
+  padding: 20px;
+  text-align: center;
+  gap: 20px;
 }
 
-/* Keyboard Container */
-.keyboard {
+/* ✅ Title Styling */
+.title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  font-family: "Poppins", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #007bff;
+  transition: color 0.3s ease-in-out;
+}
+
+html.dark .title {
+  color: #00aaff;
+}
+
+/* ✅ Scoreboard Button */
+.scoreboard-button {
+  margin-top: 10px;
+  padding: 10px 18px;
+  font-size: 1rem;
+  font-weight: bold;
+  background-color: #ffcc00;
+  color: black;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.scoreboard-button:hover {
+  background-color: #e6b800;
+}
+
+/* ✅ Grid Layout */
+.grid {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -43,65 +69,202 @@ body {
   margin-top: 20px;
 }
 
-/* Individual Row */
+.grid-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* ✅ Tile Style */
+.cell {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  border: 2px solid gray;
+  text-transform: uppercase;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+/* ✅ Tile Colors */
+.bg-green-500 {
+  background-color: #6aaa64 !important;
+  color: white !important;
+}
+
+.bg-yellow-500 {
+  background-color: #c9b458 !important;
+  color: black !important;
+}
+
+.bg-gray-400 {
+  background-color: #787c7e !important;
+  color: white !important;
+}
+
+/* ✅ Dark Mode Tile + Key Colors */
+html.dark .bg-green-500 {
+  background-color: #538d4e !important;
+  color: white !important;
+}
+
+html.dark .bg-yellow-500 {
+  background-color: #b59f3b !important;
+  color: black !important;
+}
+
+html.dark .bg-gray-400 {
+  background-color: #3a3a3c !important;
+  color: white !important;
+}
+
+/* ✅ Input Box */
+.input-box {
+  margin-top: 20px;
+  padding: 10px;
+  border: 2px solid black;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  color: black;
+  text-align: center;
+  width: 270px;
+  border-radius: 5px;
+  background-color: white;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+html.dark .input-box {
+  background-color: #222;
+  color: white;
+  border-color: white;
+}
+
+/* ✅ Restart Button */
+.restart-button {
+  margin-top: 20px;
+  padding: 12px 20px;
+  font-size: 1rem;
+  font-weight: bold;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.restart-button:hover {
+  background-color: #0056b3;
+}
+
+html.dark .restart-button {
+  background-color: #00aaff;
+  color: black;
+}
+
+html.dark .restart-button:hover {
+  background-color: #009dcc;
+}
+
+/* ✅ Error Message */
+.error-message {
+  color: red;
+  margin-top: 10px;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+/* ✅ Game Over & Win Messages */
+.game-over {
+  font-size: 1.2rem;
+  margin-top: 10px;
+  color: red;
+}
+
+.win-message {
+  color: green;
+  font-weight: bold;
+}
+
+html.dark .win-message {
+  color: #00ff00;
+}
+
+/* ✅ Dark Mode Toggle */
+.dark-mode-switch {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+}
+
+/* ✅ Virtual Keyboard */
+.keyboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+  gap: 6px;
+}
+
 .keyboard-row {
   display: flex;
   justify-content: center;
   gap: 6px;
 }
 
-/* Key Button Style */
 .key {
-  padding: 10px;
-  min-width: 36px;
-  height: 50px;
+  padding: 15px 20px;
   font-size: 1.2rem;
-  border: none;
-  border-radius: 4px;
-  background: #ddd;
-  color: #000;
-  cursor: pointer;
-  user-select: none;
-  transition: background 0.2s;
-}
-
-.key:active {
-  background: #bbb;
-}
-
-/* Special Keys */
-.key.enter,
-.key.delete {
-  min-width: 60px;
-}
-
-/* Responsive Keyboard for Mobile */
-@media (max-width: 500px) {
-  .key {
-    padding: 6px;
-    min-width: 28px;
-    height: 40px;
-    font-size: 0.9rem;
-  }
-
-  .key.enter,
-  .key.delete {
-    min-width: 50px;
-  }
-
-  .board {
-    max-width: 260px;
-    gap: 6px;
-  }
-
-  .cell {
-    font-size: 1.5rem;
-  }
-}
-
-/* Error Message Styling */
-.error-message {
-  color: red;
   font-weight: bold;
-  margin-top: 15px;
+  border-radius: 5px;
+  border: none;
+  background-color: #a0a0a0;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  width: 45px;
+  height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+.large-key {
+  width: 80px;
+}
+
+/* ✅ Keyboard default in dark mode: white */
+html.dark .key {
+  background-color: white;
+  color: black;
+}
+
+/* ✅ Pretty Firebase error */
+.pretty-error {
+  background-color: #ffe6e6;
+  color: #b30000;
+  padding: 10px 16px;
+  border-left: 5px solid #ff4d4d;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  margin-top: 10px;
+  max-width: 320px;
+}
+
+.active-button {
+  background-color: #007bff !important;
+  color: white !important;
+}
+
+html.dark .active-button {
+  background-color: #00aaff !important;
+  color: black !important;
+}
+
