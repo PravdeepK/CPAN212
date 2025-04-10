@@ -64,7 +64,13 @@ export default function Home() {
     setLoading(true);
     setErrorMessage("");
     try {
-      const res = await fetch(`/api/word?length=${difficulty}`);
+      const res = await fetch("/api/word", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ length: difficulty }),
+      });      
       if (!res.ok) return setErrorMessage("Failed to fetch word");
 
       const data = await res.json();

@@ -1,27 +1,33 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 
 export async function POST(req) {
+  const { word } = await req.json();
+
   try {
-    const { word } = await req.json();
-    const filePath = path.join(process.cwd(), "data", "words_alpha.txt");
+    const prompt = `Is "${word}" a valid English word? Reply with just "yes" or "no".`;
 
-    if (!fs.existsSync(filePath)) {
-      return NextResponse.json({ error: "Word list file not found" }, { status: 500 });
-    }
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4",
+        messages: [
+          { role: "system", content: "You are a dictionary validator. Reply ONLY with 'yes' or 'no'." },
+          { role: "user", content: prompt },
+        ],
+        max_tokens: 3,
+        temperature: 0.2,
+      }),
+    });
 
-    const fileContents = fs.readFileSync(filePath, "utf8");
-    const wordsList = new Set(
-      fileContents.split("\n").map((w) => w.trim().toUpperCase())
-    );
+    const data = await response.json();
+    const responseText = data.choices?.[0]?.message?.content?.trim().toLowerCase();
 
-    if (wordsList.has(word)) {
-      return NextResponse.json({ valid: true });
-    } else {
-      return NextResponse.json({ valid: false });
-    }
+    return NextResponse.json({ valid: responseText === "yes" });
   } catch (error) {
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json({ valid: false });
   }
 }

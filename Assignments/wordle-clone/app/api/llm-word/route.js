@@ -4,7 +4,7 @@ export async function POST(req) {
   const { length = 5 } = await req.json();
 
   try {
-    const prompt = `Give me one real English word that is exactly ${length} letters long. Return only the word in lowercase. No punctuation or formatting.`;
+    const prompt = `Give me one valid English word that is exactly ${length} letters long. Return only the word, no punctuation.`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -17,7 +17,7 @@ export async function POST(req) {
         messages: [
           {
             role: "system",
-            content: "You're a Wordle game assistant. Only return one clean English word of the requested length. No punctuation or explanation.",
+            content: "You are a helpful Wordle assistant. Only return clean, real English words of a specific length as requested.",
           },
           {
             role: "user",
@@ -25,15 +25,15 @@ export async function POST(req) {
           },
         ],
         max_tokens: 10,
-        temperature: 0.7,
+        temperature: 0.5,
       }),
     });
 
     const data = await response.json();
     const word = data.choices?.[0]?.message?.content?.trim()?.toUpperCase();
 
-    return NextResponse.json({ word });
+    return NextResponse.json({ result: word });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to generate word" }, { status: 500 });
+    return NextResponse.json({ error: "LLM failed to generate word." }, { status: 500 });
   }
 }
