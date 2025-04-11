@@ -10,7 +10,7 @@ const PORT = 8001;
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect('mongodb+srv://pravdeepkk:ygzsE5kCHDKEdOZa@cluster0.vbbsy.mongodb.net/recipeApp?retryWrites=true&w=majority', {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
