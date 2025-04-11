@@ -4,7 +4,12 @@ export async function POST(req) {
   const { length = 5 } = await req.json();
 
   try {
-    const prompt = `Give me one real English word that is exactly ${length} letters long. Return only the word in lowercase. No punctuation or formatting.`;
+    const prompt = `
+Give me one uncommon but valid English word that is exactly ${length} letters long.
+Do NOT return common or generic words like "apple" or "water".
+No explanation, formatting, punctuation, or quotes.
+Only return the word in lowercase.
+`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -13,11 +18,11 @@ export async function POST(req) {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4",
+        model: "gpt-3.5-turbo",
         messages: [
           {
             role: "system",
-            content: "You're a Wordle game assistant. Only return one clean English word of the requested length. No punctuation or explanation.",
+            content: "You are a Wordle word picker. Always return one English word of the requested length only. No punctuation, no explanation.",
           },
           {
             role: "user",
@@ -25,15 +30,25 @@ export async function POST(req) {
           },
         ],
         max_tokens: 10,
-        temperature: 0.7,
+        temperature: 0.85, // 🔥 slightly increased randomness
       }),
     });
 
     const data = await response.json();
-    const word = data.choices?.[0]?.message?.content?.trim()?.toUpperCase();
 
-    return NextResponse.json({ word });
+    const raw = data?.choices?.[0]?.message?.content;
+    const cleaned = raw?.replace(/[^a-zA-Z]/g, "").toUpperCase();
+
+    console.log("🧪 Raw GPT:", raw);
+    console.log(`✅ Cleaned: "${cleaned}" (Length: ${cleaned?.length})`);
+
+    if (!cleaned || cleaned.length !== length) {
+      throw new Error(`Word format mismatch. Got "${cleaned}"`);
+    }
+
+    return NextResponse.json({ word: cleaned });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to generate word" }, { status: 500 });
+    console.error("❌ Word generation failed:", error.message);
+    return NextResponse.json({ error: "LLM failed to generate a valid word." }, { status: 500 });
   }
 }
