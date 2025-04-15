@@ -29,7 +29,7 @@ html.dark {
 
 /* Title Styling */
 .title {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: bold;
   font-family: "Poppins", sans-serif;
   text-transform: uppercase;
@@ -42,15 +42,16 @@ html.dark .title {
   color: #00aaff;
 }
 
-/* Scoreboard & Restart Button */
+/* Global Button Styling */
 .scoreboard-button,
-.restart-button {
-  margin-top: 10px;
-  padding: 8px 14px;
+.restart-button,
+.logout-button {
+  margin-top: 6px;
+  padding: 6px 12px;
   font-size: 0.9rem;
   font-weight: bold;
-  background-color: #ffcc00;
-  color: black;
+  background-color: #00aaff;
+  color: white;
   border: none;
   cursor: pointer;
   border-radius: 8px;
@@ -58,16 +59,8 @@ html.dark .title {
 }
 
 .scoreboard-button:hover,
-.restart-button:hover {
-  background-color: #e6b800;
-}
-
-html.dark .restart-button {
-  background-color: #00aaff;
-  color: black;
-}
-
-html.dark .restart-button:hover {
+.restart-button:hover,
+.logout-button:hover {
   background-color: #009dcc;
 }
 
@@ -188,7 +181,7 @@ html.dark .win-message {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 8px;
+  margin-top: 12px;
   gap: 4px;
 }
 
@@ -224,23 +217,72 @@ html.dark .key {
   color: black;
 }
 
-/* Responsive Tweaks */
-@media (max-height: 700px) {
+/* Pretty Firebase Error Box */
+.pretty-error {
+  background-color: #ffe6e6;
+  color: #b30000;
+  padding: 10px 16px;
+  border-left: 5px solid #ff4d4d;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  margin-top: 10px;
+  max-width: 320px;
+}
+
+.active-button {
+  background-color: #007bff !important;
+  color: white !important;
+}
+
+html.dark .active-button {
+  background-color: #00aaff !important;
+  color: black !important;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 640px) {
+  .title {
+    font-size: 1.8rem;
+  }
+
+  .scoreboard-button,
+  .restart-button,
+  .logout-button {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .input-box {
+    width: 180px;
+    padding: 6px;
+    font-size: 0.9rem;
+  }
+
   .cell {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     font-size: 1rem;
   }
 
   .key {
-    width: 32px;
-    height: 40px;
-    font-size: 0.85rem;
-    padding: 8px;
+    width: 30px;
+    height: 36px;
+    font-size: 0.75rem;
+    padding: 6px 8px;
   }
 
   .large-key {
-    width: 55px;
+    width: 50px;
+  }
+
+  .grid {
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .keyboard {
+    margin-top: 6px;
+    gap: 3px;
   }
 }
-

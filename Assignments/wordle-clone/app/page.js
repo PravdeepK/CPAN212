@@ -17,7 +17,6 @@ import {
 
 const db = getFirestore();
 const MAX_TRIES = 6;
-const KEYBOARD_LAYOUT = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 
 export default function Home() {
   const router = useRouter();
@@ -78,12 +77,10 @@ export default function Home() {
           setErrorMessage(
             `Expected ${difficulty}-letter word, but got ${data.word.length}. Please try again.`
           );
-          console.warn(`Mismatch: received "${data.word}"`);
           return;
         }
 
         setSecretWord(data.word);
-        console.log(`Answer (${data.word.length} letters): ${data.word}`);
         setGuesses(Array(MAX_TRIES).fill(""));
         setKeyStatuses({});
         setGameOver(false);
@@ -108,45 +105,6 @@ export default function Home() {
       return data.valid;
     } catch {
       return false;
-    }
-  };
-
-  const saveGameResult = async (result) => {
-    const user = auth.currentUser;
-    if (!user || !user.displayName) return;
-
-    const username = user.displayName;
-    const gamesRef = collection(
-      db,
-      "users",
-      username,
-      "games",
-      difficulty.toString(),
-      "entries"
-    );
-
-    await addDoc(gamesRef, {
-      result,
-      word: secretWord,
-      difficulty,
-      timestamp: new Date(),
-    });
-
-    const q = query(gamesRef, orderBy("timestamp", "desc"));
-    const snapshot = await getDocs(q);
-    const extraGames = snapshot.docs.slice(10);
-    for (const gameDoc of extraGames) {
-      await deleteDoc(
-        doc(
-          db,
-          "users",
-          username,
-          "games",
-          difficulty.toString(),
-          "entries",
-          gameDoc.id
-        )
-      );
     }
   };
 
@@ -203,10 +161,8 @@ export default function Home() {
       if (currentGuess === secretWord) {
         setWon(true);
         setGameOver(true);
-        await saveGameResult("win");
       } else if (newGuesses.filter((g) => g !== "").length >= MAX_TRIES) {
         setGameOver(true);
-        await saveGameResult("lose");
       }
     }
   };
@@ -226,8 +182,8 @@ export default function Home() {
   if (!username) return null;
 
   return (
-<div className="flex flex-col justify-start items-center min-h-screen w-full text-center gap-3 px-2">
-<h1 className="title">Wordle Clone</h1>
+    <div className="flex flex-col justify-start items-center min-h-screen w-full text-center gap-3 px-2">
+      <h1 className="title">Wordle Clone</h1>
       <p className="welcome-text">Welcome, {username}!</p>
 
       <div className="flex items-center gap-4">
@@ -240,23 +196,6 @@ export default function Home() {
           onChange={(e) => setDifficulty(parseInt(e.target.value))}
         />
       </div>
-
-      <button
-        onClick={() => router.push("/scoreboard")}
-        className="scoreboard-button"
-      >
-        View Scoreboard
-      </button>
-
-      <button
-        className="scoreboard-button"
-        onClick={async () => {
-          await signOut(auth);
-          router.replace("/login");
-        }}
-      >
-        Logout
-      </button>
 
       <label className="dark-mode-switch">
         <input type="checkbox" checked={darkMode} onChange={toggleDarkMode} />
@@ -296,20 +235,32 @@ export default function Home() {
         maxLength={difficulty}
       />
 
+      {/* Custom Keyboard */}
       <div className="keyboard">
-        {KEYBOARD_LAYOUT.map((row, rowIndex) => (
-          <div key={rowIndex} className="keyboard-row">
-            {row.split("").map((key) => (
-              <button
-                key={key}
-                className={`key ${keyStatuses[key] || ""}`}
-                onClick={() => handleVirtualKey(key)}
-              >
-                {key}
-              </button>
-            ))}
-          </div>
-        ))}
+        <div className="keyboard-row">
+          {"QWERTYUIOP".split("").map((key) => (
+            <button
+              key={key}
+              className={`key ${keyStatuses[key] || ""}`}
+              onClick={() => handleVirtualKey(key)}
+            >
+              {key}
+            </button>
+          ))}
+        </div>
+
+        <div className="keyboard-row">
+          {"ASDFGHJKL".split("").map((key) => (
+            <button
+              key={key}
+              className={`key ${keyStatuses[key] || ""}`}
+              onClick={() => handleVirtualKey(key)}
+            >
+              {key}
+            </button>
+          ))}
+        </div>
+
         <div className="keyboard-row">
           <button
             className="key large-key"
@@ -317,6 +268,17 @@ export default function Home() {
           >
             Enter
           </button>
+
+          {"ZXCVBNM".split("").map((key) => (
+            <button
+              key={key}
+              className={`key ${keyStatuses[key] || ""}`}
+              onClick={() => handleVirtualKey(key)}
+            >
+              {key}
+            </button>
+          ))}
+
           <button
             className="key large-key"
             onClick={() => handleVirtualKey("⌫")}
@@ -336,9 +298,29 @@ export default function Home() {
         </p>
       )}
 
-      <button onClick={fetchWord} className="restart-button">
-        Restart Game
-      </button>
+      {/* Bottom Buttons */}
+      <div className="flex flex-col gap-1 mt-2">
+        <button onClick={fetchWord} className="restart-button">
+          Restart Game
+        </button>
+
+        <button
+          onClick={() => router.push("/scoreboard")}
+          className="scoreboard-button"
+        >
+          View Scoreboard
+        </button>
+
+        <button
+          className="logout-button"
+          onClick={async () => {
+            await signOut(auth);
+            router.replace("/login");
+          }}
+        >
+          Logout
+        </button>
+      </div>
     </div>
   );
 }
