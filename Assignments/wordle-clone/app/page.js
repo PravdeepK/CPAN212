@@ -79,37 +79,46 @@ export default function Home() {
   const fetchWord = async () => {
     setLoading(true);
     setErrorMessage("");
+  
     try {
       const res = await fetch("/api/word", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ length: difficulty }),
       });
-
-      if (!res.ok) return setErrorMessage("Failed to fetch word");
-
-      const data = await res.json();
-      if (data.word) {
-        if (data.word.length !== difficulty) {
-          setErrorMessage(
-            `Expected ${difficulty}-letter word, but got ${data.word.length}. Please try again.`
-          );
-          return;
-        }
-
-        setSecretWord(data.word);
-        setGuesses(Array(MAX_TRIES).fill(""));
-        setKeyStatuses({});
-        setGameOver(false);
-        setWon(false);
-        setCurrentGuess("");
+  
+      if (!res.ok) {
+        setErrorMessage("Failed to fetch word");
+        return;
       }
+  
+      const data = await res.json();
+  
+      // Final Protection Layer - Frontend Check
+      if (!data.word || data.word.length !== difficulty) {
+        setErrorMessage(
+          `Word length mismatch! Expected ${difficulty} letters but got ${data.word.length}. Retrying...`
+        );
+        console.warn(
+          `Retrying fetchWord because GPT returned wrong length: ${data.word}`
+        );
+        // Try again until correct word fetched
+        fetchWord();
+        return;
+      }
+  
+      setSecretWord(data.word);
+      setGuesses(Array(MAX_TRIES).fill(""));
+      setKeyStatuses({});
+      setGameOver(false);
+      setWon(false);
+      setCurrentGuess("");
     } catch (error) {
       setErrorMessage("Network error");
     } finally {
       setLoading(false);
     }
-  };
+  };  
 
   const validateWord = async (word) => {
     try {
