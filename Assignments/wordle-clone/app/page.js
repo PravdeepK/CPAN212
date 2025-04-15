@@ -59,6 +59,23 @@ export default function Home() {
     setDarkMode(newMode);
   };
 
+  const saveGameResult = async (result) => {
+    if (!username || !secretWord) return;
+
+    try {
+      await addDoc(
+        collection(db, "users", username, "games", difficulty.toString(), "entries"),
+        {
+          word: secretWord,
+          result, // "win" or "lose"
+          timestamp: new Date(),
+        }
+      );
+    } catch (error) {
+      console.error("Failed to save game result:", error);
+    }
+  };
+
   const fetchWord = async () => {
     setLoading(true);
     setErrorMessage("");
@@ -159,9 +176,11 @@ export default function Home() {
       setCurrentGuess("");
 
       if (currentGuess === secretWord) {
+        await saveGameResult("win");
         setWon(true);
         setGameOver(true);
       } else if (newGuesses.filter((g) => g !== "").length >= MAX_TRIES) {
+        await saveGameResult("lose");
         setGameOver(true);
       }
     }
@@ -300,7 +319,15 @@ export default function Home() {
 
       {/* Bottom Buttons */}
       <div className="flex flex-col gap-1 mt-2">
-        <button onClick={fetchWord} className="restart-button">
+        <button
+          onClick={async () => {
+            if (!won && gameOver) {
+              await saveGameResult("lose");
+            }
+            fetchWord();
+          }}
+          className="restart-button"
+        >
           Restart Game
         </button>
 

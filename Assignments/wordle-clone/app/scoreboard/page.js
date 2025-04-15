@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -9,6 +10,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { auth } from "../../config/firebaseConfig";
+import { onAuthStateChanged } from "firebase/auth";
 
 const db = getFirestore();
 
@@ -44,12 +46,21 @@ export default function Scoreboard() {
   };
 
   useEffect(() => {
-    fetchAllGames();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && user.displayName) {
+        fetchAllGames(); // safe to fetch
+      } else {
+        router.push("/login"); // user not logged in
+      }
+    });
+
+    return () => unsubscribe(); // cleanup listener
   }, []);
 
   const filteredGames = games.filter((game) => {
     const matchDifficulty =
-      difficultyFilter === "all" || game.difficulty === parseInt(difficultyFilter);
+      difficultyFilter === "all" ||
+      game.difficulty === parseInt(difficultyFilter);
     const matchResult =
       resultFilter === "all" || game.result === resultFilter;
     return matchDifficulty && matchResult;
@@ -62,7 +73,9 @@ export default function Scoreboard() {
       {/* Filters */}
       <div className="flex flex-wrap justify-center gap-2">
         <button
-          className={`scoreboard-button ${difficultyFilter === "all" ? "active-button" : ""}`}
+          className={`scoreboard-button ${
+            difficultyFilter === "all" ? "active-button" : ""
+          }`}
           onClick={() => setDifficultyFilter("all")}
         >
           All Difficulties
@@ -72,7 +85,9 @@ export default function Scoreboard() {
           return (
             <button
               key={len}
-              className={`scoreboard-button ${difficultyFilter === len ? "active-button" : ""}`}
+              className={`scoreboard-button ${
+                difficultyFilter === len ? "active-button" : ""
+              }`}
               onClick={() => setDifficultyFilter(len)}
             >
               {len} Letters
@@ -83,19 +98,25 @@ export default function Scoreboard() {
 
       <div className="flex gap-2 flex-wrap justify-center">
         <button
-          className={`scoreboard-button ${resultFilter === "all" ? "active-button" : ""}`}
+          className={`scoreboard-button ${
+            resultFilter === "all" ? "active-button" : ""
+          }`}
           onClick={() => setResultFilter("all")}
         >
           All Results
         </button>
         <button
-          className={`scoreboard-button ${resultFilter === "win" ? "active-button" : ""}`}
+          className={`scoreboard-button ${
+            resultFilter === "win" ? "active-button" : ""
+          }`}
           onClick={() => setResultFilter("win")}
         >
           Wins
         </button>
         <button
-          className={`scoreboard-button ${resultFilter === "lose" ? "active-button" : ""}`}
+          className={`scoreboard-button ${
+            resultFilter === "lose" ? "active-button" : ""
+          }`}
           onClick={() => setResultFilter("lose")}
         >
           Losses
@@ -106,14 +127,19 @@ export default function Scoreboard() {
       {filteredGames.length === 0 ? (
         <p>No games found.</p>
       ) : (
-        <ul className="text-lg">
-          {filteredGames.map((game, index) => (
-            <li key={game.id}>
-              {index + 1}. {game.result === "win" ? "Win" : "Loss"} — Word:{" "}
-              <strong>{game.word}</strong> ({game.difficulty} letters)
-            </li>
-          ))}
-        </ul>
+<ul className="text-lg">
+  {filteredGames.map((game, index) => (
+    <li
+      key={game.id}
+      className={game.result === "win" ? "text-green-600" : "text-red-600"}
+    >
+      {index + 1}.{" "}
+      {game.result === "win" ? "✅ Win" : "❌ Loss"} — Word:{" "}
+      <strong>{game.word}</strong> ({game.difficulty} letters)
+    </li>
+  ))}
+</ul>
+
       )}
 
       <button onClick={() => router.push("/")} className="restart-button">

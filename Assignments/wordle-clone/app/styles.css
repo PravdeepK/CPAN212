@@ -61,7 +61,7 @@ html.dark .title {
 .scoreboard-button:hover,
 .restart-button:hover,
 .logout-button:hover {
-  background-color: #009dcc;
+  background-color: #828282;
 }
 
 /* Grid Layout */
@@ -231,7 +231,7 @@ html.dark .key {
 }
 
 .active-button {
-  background-color: #007bff !important;
+  background-color: #002955 !important;
   color: white !important;
 }
 
