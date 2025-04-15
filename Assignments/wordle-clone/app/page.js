@@ -21,7 +21,7 @@ const KEYBOARD_LAYOUT = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 
 export default function Home() {
   const router = useRouter();
-  const [username, setUsername] = useState(null); // null initially to prevent early rendering
+  const [username, setUsername] = useState(null);
   const [difficulty, setDifficulty] = useState(5);
   const [guesses, setGuesses] = useState(Array(MAX_TRIES).fill(""));
   const [currentGuess, setCurrentGuess] = useState("");
@@ -66,17 +66,18 @@ export default function Home() {
     try {
       const res = await fetch("/api/word", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ length: difficulty }),
-      });      
+      });
+
       if (!res.ok) return setErrorMessage("Failed to fetch word");
 
       const data = await res.json();
       if (data.word) {
         if (data.word.length !== difficulty) {
-          setErrorMessage(`Expected ${difficulty}-letter word, but got ${data.word.length}. Please try again.`);
+          setErrorMessage(
+            `Expected ${difficulty}-letter word, but got ${data.word.length}. Please try again.`
+          );
           console.warn(`Mismatch: received "${data.word}"`);
           return;
         }
@@ -105,7 +106,7 @@ export default function Home() {
       });
       const data = await res.json();
       return data.valid;
-    } catch (error) {
+    } catch {
       return false;
     }
   };
@@ -115,7 +116,14 @@ export default function Home() {
     if (!user || !user.displayName) return;
 
     const username = user.displayName;
-    const gamesRef = collection(db, "users", username, "games", difficulty.toString(), "entries");
+    const gamesRef = collection(
+      db,
+      "users",
+      username,
+      "games",
+      difficulty.toString(),
+      "entries"
+    );
 
     await addDoc(gamesRef, {
       result,
@@ -128,7 +136,17 @@ export default function Home() {
     const snapshot = await getDocs(q);
     const extraGames = snapshot.docs.slice(10);
     for (const gameDoc of extraGames) {
-      await deleteDoc(doc(db, "users", username, "games", difficulty.toString(), "entries", gameDoc.id));
+      await deleteDoc(
+        doc(
+          db,
+          "users",
+          username,
+          "games",
+          difficulty.toString(),
+          "entries",
+          gameDoc.id
+        )
+      );
     }
   };
 
@@ -205,11 +223,11 @@ export default function Home() {
     }
   };
 
-  if (!username) return null; // prevent UI flicker during auth
+  if (!username) return null;
 
   return (
-    <div className="flex flex-col justify-center items-center min-h-screen w-full text-center gap-6">
-      <h1 className="title">Wordle Clone</h1>
+<div className="flex flex-col justify-start items-center min-h-screen w-full text-center gap-3 px-2">
+<h1 className="title">Wordle Clone</h1>
       <p className="welcome-text">Welcome, {username}!</p>
 
       <div className="flex items-center gap-4">
@@ -223,7 +241,10 @@ export default function Home() {
         />
       </div>
 
-      <button onClick={() => router.push("/scoreboard")} className="scoreboard-button">
+      <button
+        onClick={() => router.push("/scoreboard")}
+        className="scoreboard-button"
+      >
         View Scoreboard
       </button>
 
@@ -244,14 +265,19 @@ export default function Home() {
 
       <div className="grid">
         {guesses.map((guess, rowIndex) => {
-          const tileColors = guess ? checkGuess(guess) : Array(difficulty).fill("border-gray-400");
+          const tileColors = guess
+            ? checkGuess(guess)
+            : Array(difficulty).fill("border-gray-400");
 
           return (
             <div key={rowIndex} className="grid-row">
               {Array.from({ length: difficulty }).map((_, colIndex) => {
                 const letter = guess[colIndex] || "";
                 return (
-                  <div key={colIndex} className={`cell ${tileColors[colIndex]}`}>
+                  <div
+                    key={colIndex}
+                    className={`cell ${tileColors[colIndex]}`}
+                  >
                     {letter}
                   </div>
                 );
@@ -274,15 +300,29 @@ export default function Home() {
         {KEYBOARD_LAYOUT.map((row, rowIndex) => (
           <div key={rowIndex} className="keyboard-row">
             {row.split("").map((key) => (
-              <button key={key} className={`key ${keyStatuses[key] || ""}`} onClick={() => handleVirtualKey(key)}>
+              <button
+                key={key}
+                className={`key ${keyStatuses[key] || ""}`}
+                onClick={() => handleVirtualKey(key)}
+              >
                 {key}
               </button>
             ))}
           </div>
         ))}
         <div className="keyboard-row">
-          <button className="key large-key" onClick={() => handleVirtualKey("ENTER")}>Enter</button>
-          <button className="key large-key" onClick={() => handleVirtualKey("⌫")}>⌫</button>
+          <button
+            className="key large-key"
+            onClick={() => handleVirtualKey("ENTER")}
+          >
+            Enter
+          </button>
+          <button
+            className="key large-key"
+            onClick={() => handleVirtualKey("⌫")}
+          >
+            ⌫
+          </button>
         </div>
       </div>
 
@@ -290,7 +330,9 @@ export default function Home() {
 
       {gameOver && (
         <p className="game-over">
-          {won ? "Congrats! You guessed the word!" : `Game Over! The word was ${secretWord}`}
+          {won
+            ? "Congrats! You guessed the word!"
+            : `Game Over! The word was ${secretWord}`}
         </p>
       )}
 
