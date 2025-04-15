@@ -8,6 +8,8 @@ import {
   getDocs,
   query,
   orderBy,
+  deleteDoc,
+  doc,
 } from "firebase/firestore";
 import { auth } from "../../config/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
@@ -45,16 +47,50 @@ export default function Scoreboard() {
     setGames(allGames);
   };
 
+  const resetScoreboard = async () => {
+    const user = auth.currentUser;
+    if (!user || !user.displayName) return;
+
+    const confirmReset = window.confirm(
+      "Are you sure you want to reset your scoreboard? This cannot be undone!"
+    );
+
+    if (!confirmReset) return;
+
+    const username = user.displayName;
+
+    try {
+      for (let i = 3; i <= 10; i++) {
+        const q = query(
+          collection(db, "users", username, "games", i.toString(), "entries")
+        );
+
+        const snapshot = await getDocs(q);
+
+        const deletePromises = snapshot.docs.map((docItem) =>
+          deleteDoc(doc(db, "users", username, "games", i.toString(), "entries", docItem.id))
+        );
+
+        await Promise.all(deletePromises);
+      }
+
+      await fetchAllGames(); // Refresh UI
+      alert("Scoreboard has been reset!");
+    } catch (error) {
+      console.error("Failed to reset scoreboard:", error);
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user && user.displayName) {
-        fetchAllGames(); // safe to fetch
+        fetchAllGames();
       } else {
-        router.push("/login"); // user not logged in
+        router.push("/login");
       }
     });
 
-    return () => unsubscribe(); // cleanup listener
+    return () => unsubscribe();
   }, []);
 
   const filteredGames = games.filter((game) => {
@@ -127,20 +163,23 @@ export default function Scoreboard() {
       {filteredGames.length === 0 ? (
         <p>No games found.</p>
       ) : (
-<ul className="text-lg">
-  {filteredGames.map((game, index) => (
-    <li
-      key={game.id}
-      className={game.result === "win" ? "text-green-600" : "text-red-600"}
-    >
-      {index + 1}.{" "}
-      {game.result === "win" ? "✅ Win" : "❌ Loss"} — Word:{" "}
-      <strong>{game.word}</strong> ({game.difficulty} letters)
-    </li>
-  ))}
-</ul>
-
+        <ul className="text-lg">
+          {filteredGames.map((game, index) => (
+            <li
+              key={game.id}
+              className={game.result === "win" ? "text-green-600" : "text-red-600"}
+            >
+              {index + 1}.{" "}
+              {game.result === "win" ? "✅ Win" : "❌ Loss"} — Word:{" "}
+              <strong>{game.word}</strong> ({game.difficulty} letters)
+            </li>
+          ))}
+        </ul>
       )}
+
+      <button onClick={resetScoreboard} className="restart-button">
+        Reset Scoreboard
+      </button>
 
       <button onClick={() => router.push("/")} className="restart-button">
         Back to Game
