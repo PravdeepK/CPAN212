@@ -28,9 +28,10 @@ export default function LoginPage() {
       if (isLoginMode) {
         let email = inputIdentifier;
 
-        // If logging in with username, convert to lowercase and fetch email
+        // Logging in with username — force lowercase for check
         if (!inputIdentifier.includes("@")) {
-          const userDoc = await getDoc(doc(db, "users", inputIdentifier.toLowerCase()));
+          const usernameKey = inputIdentifier.toLowerCase();
+          const userDoc = await getDoc(doc(db, "users", usernameKey));
           if (!userDoc.exists()) {
             setError("Username not found.");
             return;
@@ -41,7 +42,7 @@ export default function LoginPage() {
         await signInWithEmailAndPassword(auth, email, password);
         router.push("/");
       } else {
-        const usernameKey = username.toLowerCase(); // ✅ force lowercase
+        const usernameKey = username.toLowerCase(); // Force lowercase for uniqueness
 
         // Check if username already exists
         const userDocRef = doc(db, "users", usernameKey);
@@ -54,12 +55,12 @@ export default function LoginPage() {
         // Create Firebase Auth account
         const userCred = await createUserWithEmailAndPassword(auth, inputIdentifier, password);
 
-        // Save original-case name in displayName
+        // Save display name as entered (original case)
         await updateProfile(userCred.user, {
-          displayName: username, // e.g., "Prav"
+          displayName: username,
         });
 
-        // Save lowercase key to Firestore
+        // Save lowercase username key to Firestore for uniqueness
         await setDoc(userDocRef, {
           email: inputIdentifier,
           uid: userCred.user.uid,
