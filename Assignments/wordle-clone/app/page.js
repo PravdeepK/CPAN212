@@ -8,11 +8,6 @@ import {
   getFirestore,
   collection,
   addDoc,
-  query,
-  orderBy,
-  getDocs,
-  deleteDoc,
-  doc,
 } from "firebase/firestore";
 
 const db = getFirestore();
@@ -39,11 +34,12 @@ export default function Home() {
       } else {
         setUsername(user.displayName || "Player");
 
+        // Apply saved dark mode preference
         const savedTheme = localStorage.getItem("darkMode");
-        if (savedTheme === "true") {
-          setDarkMode(true);
-          document.documentElement.classList.add("dark");
-        }
+        const darkModeEnabled = savedTheme === "true";
+
+        setDarkMode(darkModeEnabled);
+        document.documentElement.classList.toggle("dark", darkModeEnabled);
 
         fetchWord();
       }
@@ -54,9 +50,9 @@ export default function Home() {
 
   const toggleDarkMode = () => {
     const newMode = !darkMode;
+    setDarkMode(newMode);
     localStorage.setItem("darkMode", newMode);
     document.documentElement.classList.toggle("dark", newMode);
-    setDarkMode(newMode);
   };
 
   const saveGameResult = async (result) => {
@@ -67,7 +63,7 @@ export default function Home() {
         collection(db, "users", username, "games", difficulty.toString(), "entries"),
         {
           word: secretWord,
-          result, // "win" or "lose"
+          result,
           timestamp: new Date(),
         }
       );
@@ -79,22 +75,21 @@ export default function Home() {
   const fetchWord = async () => {
     setLoading(true);
     setErrorMessage("");
-  
+
     try {
       const res = await fetch("/api/word", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ length: difficulty }),
       });
-  
+
       if (!res.ok) {
         setErrorMessage("Failed to fetch word");
         return;
       }
-  
+
       const data = await res.json();
-  
-      // Final Protection Layer - Frontend Check
+
       if (!data.word || data.word.length !== difficulty) {
         setErrorMessage(
           `Word length mismatch! Expected ${difficulty} letters but got ${data.word.length}. Retrying...`
@@ -102,11 +97,10 @@ export default function Home() {
         console.warn(
           `Retrying fetchWord because GPT returned wrong length: ${data.word}`
         );
-        // Try again until correct word fetched
         fetchWord();
         return;
       }
-  
+
       setSecretWord(data.word);
       setGuesses(Array(MAX_TRIES).fill(""));
       setKeyStatuses({});
@@ -118,7 +112,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };  
+  };
 
   const validateWord = async (word) => {
     try {
