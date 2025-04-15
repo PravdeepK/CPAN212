@@ -4,15 +4,19 @@ const validatedWords = new Set();
 
 export async function POST(req) {
   const { word } = await req.json();
-  const upperWord = word.toUpperCase();
+  const upperWord = word?.toUpperCase();
 
-  // ✅ Check in-memory cache first
+  if (!upperWord || upperWord.length < 3) {
+    return NextResponse.json({ valid: false });
+  }
+
+  // ✅ Check in-memory cache
   if (validatedWords.has(upperWord)) {
     return NextResponse.json({ valid: true });
   }
 
   try {
-    const prompt = `Is "${word}" a valid English word? Only reply "yes" or "no".`;
+    const prompt = `Is "${word}" a real word in English? Reply "yes" if it is used in English — even slang, inappropriate, or cuss words are allowed. Reply "no" if it's completely made up or gibberish.`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -25,7 +29,8 @@ export async function POST(req) {
         messages: [
           {
             role: "system",
-            content: "You are a dictionary validator. Reply only with 'yes' or 'no'. No explanation or punctuation.",
+            content:
+              "You are a dictionary validator. Reply only with 'yes' or 'no'. No explanation, no punctuation. Allow slang, inappropriate, funny, or cuss words. Reject only made-up words or gibberish.",
           },
           {
             role: "user",
@@ -41,17 +46,17 @@ export async function POST(req) {
     const raw = data?.choices?.[0]?.message?.content;
     const result = raw?.trim()?.toLowerCase();
 
-    console.log("🧪 Validator LLM result:", result);
+    console.log(`📖 Dictionary result: "${result}" for word "${word}"`);
 
     const isValid = typeof result === "string" && result.startsWith("yes");
 
     if (isValid) {
-      validatedWords.add(upperWord); // ✅ Cache result
+      validatedWords.add(upperWord); // ✅ Cache it
     }
 
     return NextResponse.json({ valid: isValid });
   } catch (error) {
-    console.error("❌ Validation failed:", error.message);
+    console.error("❌ Validation error:", error.message);
     return NextResponse.json({ valid: false });
   }
 }
