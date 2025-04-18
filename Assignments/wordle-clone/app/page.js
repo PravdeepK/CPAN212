@@ -26,7 +26,6 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState("");
   const [darkMode, setDarkMode] = useState(false);
   const [keyStatuses, setKeyStatuses] = useState({});
-  const [hasSavedResult, setHasSavedResult] = useState(false); // NEW
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -37,7 +36,6 @@ export default function Home() {
 
         const savedTheme = localStorage.getItem("darkMode");
         const darkModeEnabled = savedTheme === "true";
-
         setDarkMode(darkModeEnabled);
         document.documentElement.classList.toggle("dark", darkModeEnabled);
 
@@ -56,7 +54,7 @@ export default function Home() {
   };
 
   const saveGameResult = async (result) => {
-    if (!username || !secretWord || hasSavedResult) return;
+    if (!username || !secretWord) return;
 
     try {
       await addDoc(
@@ -67,7 +65,6 @@ export default function Home() {
           timestamp: new Date(),
         }
       );
-      setHasSavedResult(true); // Mark as saved
     } catch (error) {
       console.error("Failed to save game result:", error);
     }
@@ -108,7 +105,6 @@ export default function Home() {
       setGameOver(false);
       setWon(false);
       setCurrentGuess("");
-      setHasSavedResult(false); // RESET FLAG
     } catch (error) {
       setErrorMessage("Network error");
     } finally {
@@ -259,6 +255,59 @@ export default function Home() {
         maxLength={difficulty}
       />
 
+      {/* Custom Keyboard */}
+      <div className="keyboard">
+        <div className="keyboard-row">
+          {"QWERTYUIOP".split("").map((key) => (
+            <button
+              key={key}
+              className={`key ${keyStatuses[key] || ""}`}
+              onClick={() => handleVirtualKey(key)}
+            >
+              {key}
+            </button>
+          ))}
+        </div>
+
+        <div className="keyboard-row">
+          {"ASDFGHJKL".split("").map((key) => (
+            <button
+              key={key}
+              className={`key ${keyStatuses[key] || ""}`}
+              onClick={() => handleVirtualKey(key)}
+            >
+              {key}
+            </button>
+          ))}
+        </div>
+
+        <div className="keyboard-row">
+          <button
+            className="key large-key"
+            onClick={() => handleVirtualKey("ENTER")}
+          >
+            Enter
+          </button>
+
+          {"ZXCVBNM".split("").map((key) => (
+            <button
+              key={key}
+              className={`key ${keyStatuses[key] || ""}`}
+              onClick={() => handleVirtualKey(key)}
+            >
+              {key}
+            </button>
+          ))}
+
+          <button
+            className="key large-key"
+            onClick={() => handleVirtualKey("⌫")}
+          >
+            ⌫
+          </button>
+        </div>
+      </div>
+
       {errorMessage && <p className="error-message">{errorMessage}</p>}
 
       {gameOver && (
@@ -269,12 +318,25 @@ export default function Home() {
         </p>
       )}
 
+      {/* Bottom Buttons */}
       <div className="flex flex-col gap-1 mt-2">
         <button
-          onClick={fetchWord}
+          onClick={async () => {
+            if (!won && gameOver) {
+              await saveGameResult("lose");
+            }
+            fetchWord();
+          }}
           className="restart-button"
         >
           Restart Game
+        </button>
+
+        <button
+          onClick={() => router.push("/custom-word")}
+          className="scoreboard-button"
+        >
+          Custom Word
         </button>
 
         <button

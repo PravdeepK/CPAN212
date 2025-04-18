@@ -1,62 +1,49 @@
 import { NextResponse } from "next/server";
+import OpenAI from "openai";
 
-const validatedWords = new Set();
+// Initialize OpenAI with your secret key
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function POST(req) {
-  const { word } = await req.json();
-  const upperWord = word?.toUpperCase();
-
-  if (!upperWord || upperWord.length < 3) {
-    return NextResponse.json({ valid: false });
-  }
-
-  // ✅ Check in-memory cache
-  if (validatedWords.has(upperWord)) {
-    return NextResponse.json({ valid: true });
-  }
-
   try {
-    const prompt = `Is "${word}" a real word in English? Reply "yes" if it is used in English — even slang, inappropriate, or cuss words are allowed. Reply "no" if it's completely made up or gibberish.`;
+    const { word } = await req.json();
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a dictionary validator. Reply only with 'yes' or 'no'. No explanation, no punctuation. Allow slang, inappropriate, funny, or cuss words. Reject only made-up words or gibberish.",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        max_tokens: 3,
-        temperature: 0.2,
-      }),
-    });
-
-    const data = await response.json();
-    const raw = data?.choices?.[0]?.message?.content;
-    const result = raw?.trim()?.toLowerCase();
-
-    console.log(`📖 Dictionary result: "${result}" for word "${word}"`);
-
-    const isValid = typeof result === "string" && result.startsWith("yes");
-
-    if (isValid) {
-      validatedWords.add(upperWord); // ✅ Cache it
+    // Basic format check
+    if (!word || typeof word !== "string") {
+      return NextResponse.json({ valid: false, reason: "Invalid input" });
     }
 
-    return NextResponse.json({ valid: isValid });
+    const trimmedWord = word.trim().toLowerCase();
+
+    // Must be 3–10 characters
+    if (trimmedWord.length < 3 || trimmedWord.length > 10) {
+      return NextResponse.json({ valid: false, reason: "Length out of bounds" });
+    }
+
+    // Check moderation categories (ONLY hate/violence/sexual)
+    const moderation = await openai.moderations.create({
+      input: trimmedWord,
+    });
+
+    const result = moderation.results[0];
+
+    const blocked =
+      result.categories.hate ||
+      result.categories.hate_threatening ||
+      result.categories.sexual_minors ||
+      result.categories.violence ||
+      result.categories.violence_graphic;
+
+    if (blocked) {
+      return NextResponse.json({ valid: false, reason: "Blocked by moderation" });
+    }
+
+    // ✅ Accept the word
+    return NextResponse.json({ valid: true });
   } catch (error) {
-    console.error("❌ Validation error:", error.message);
-    return NextResponse.json({ valid: false });
+    console.error("Validation Error:", error);
+    return NextResponse.json({ valid: false, reason: "Server error" });
   }
 }

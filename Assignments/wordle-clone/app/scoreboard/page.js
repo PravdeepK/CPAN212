@@ -32,6 +32,7 @@ export default function Scoreboard() {
     const username = user.displayName;
     const allGames = [];
 
+    // Normal 3–10 letter games
     for (let i = 3; i <= 10; i++) {
       const q = query(
         collection(db, "users", username, "games", i.toString(), "entries"),
@@ -44,6 +45,15 @@ export default function Scoreboard() {
       });
     }
 
+    // ✅ Custom Word games
+    const customSnapshot = await getDocs(
+      query(collection(db, "users", username, "games", "custom", "entries"), orderBy("timestamp", "desc"))
+    );
+
+    customSnapshot.forEach((doc) => {
+      allGames.push({ id: doc.id, difficulty: "custom", ...doc.data() });
+    });
+
     setGames(allGames);
   };
 
@@ -54,7 +64,6 @@ export default function Scoreboard() {
     const confirmReset = window.confirm(
       "Are you sure you want to reset your scoreboard? This cannot be undone!"
     );
-
     if (!confirmReset) return;
 
     const username = user.displayName;
@@ -64,17 +73,22 @@ export default function Scoreboard() {
         const q = query(
           collection(db, "users", username, "games", i.toString(), "entries")
         );
-
         const snapshot = await getDocs(q);
-
         const deletePromises = snapshot.docs.map((docItem) =>
           deleteDoc(doc(db, "users", username, "games", i.toString(), "entries", docItem.id))
         );
-
         await Promise.all(deletePromises);
       }
 
-      await fetchAllGames(); // Refresh UI
+      const customSnap = await getDocs(
+        collection(db, "users", username, "games", "custom", "entries")
+      );
+      const customDeletes = customSnap.docs.map((docItem) =>
+        deleteDoc(doc(db, "users", username, "games", "custom", "entries", docItem.id))
+      );
+      await Promise.all(customDeletes);
+
+      await fetchAllGames();
       alert("Scoreboard has been reset!");
     } catch (error) {
       console.error("Failed to reset scoreboard:", error);
@@ -96,6 +110,7 @@ export default function Scoreboard() {
   const filteredGames = games.filter((game) => {
     const matchDifficulty =
       difficultyFilter === "all" ||
+      game.difficulty === "custom" && difficultyFilter === "custom" ||
       game.difficulty === parseInt(difficultyFilter);
     const matchResult =
       resultFilter === "all" || game.result === resultFilter;
@@ -109,9 +124,7 @@ export default function Scoreboard() {
       {/* Filters */}
       <div className="flex flex-wrap justify-center gap-2">
         <button
-          className={`scoreboard-button ${
-            difficultyFilter === "all" ? "active-button" : ""
-          }`}
+          className={`scoreboard-button ${difficultyFilter === "all" ? "active-button" : ""}`}
           onClick={() => setDifficultyFilter("all")}
         >
           All Difficulties
@@ -121,38 +134,36 @@ export default function Scoreboard() {
           return (
             <button
               key={len}
-              className={`scoreboard-button ${
-                difficultyFilter === len ? "active-button" : ""
-              }`}
+              className={`scoreboard-button ${difficultyFilter === len ? "active-button" : ""}`}
               onClick={() => setDifficultyFilter(len)}
             >
               {len} Letters
             </button>
           );
         })}
+        <button
+          className={`scoreboard-button ${difficultyFilter === "custom" ? "active-button" : ""}`}
+          onClick={() => setDifficultyFilter("custom")}
+        >
+          Custom
+        </button>
       </div>
 
       <div className="flex gap-2 flex-wrap justify-center">
         <button
-          className={`scoreboard-button ${
-            resultFilter === "all" ? "active-button" : ""
-          }`}
+          className={`scoreboard-button ${resultFilter === "all" ? "active-button" : ""}`}
           onClick={() => setResultFilter("all")}
         >
           All Results
         </button>
         <button
-          className={`scoreboard-button ${
-            resultFilter === "win" ? "active-button" : ""
-          }`}
+          className={`scoreboard-button ${resultFilter === "win" ? "active-button" : ""}`}
           onClick={() => setResultFilter("win")}
         >
           Wins
         </button>
         <button
-          className={`scoreboard-button ${
-            resultFilter === "lose" ? "active-button" : ""
-          }`}
+          className={`scoreboard-button ${resultFilter === "lose" ? "active-button" : ""}`}
           onClick={() => setResultFilter("lose")}
         >
           Losses
@@ -171,7 +182,10 @@ export default function Scoreboard() {
             >
               {index + 1}.{" "}
               {game.result === "win" ? "✅ Win" : "❌ Loss"} — Word:{" "}
-              <strong>{game.word}</strong> ({game.difficulty} letters)
+              <strong>{game.word}</strong>{" "}
+              {game.difficulty === "custom"
+                ? "(Custom Word)"
+                : `(${game.difficulty} letters)`}
             </li>
           ))}
         </ul>

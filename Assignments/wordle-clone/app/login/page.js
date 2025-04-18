@@ -14,11 +14,14 @@ const db = getFirestore();
 export default function LoginPage() {
   const router = useRouter();
   const [isLoginMode, setIsLoginMode] = useState(true);
-  const [inputIdentifier, setInputIdentifier] = useState(""); // username OR email
+  const [inputIdentifier, setInputIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState(""); // For sign-up
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleAuth = async () => {
     setError("");
@@ -28,7 +31,6 @@ export default function LoginPage() {
       if (isLoginMode) {
         let email = inputIdentifier;
 
-        // Logging in with username — force lowercase for check
         if (!inputIdentifier.includes("@")) {
           const usernameKey = inputIdentifier.toLowerCase();
           const userDoc = await getDoc(doc(db, "users", usernameKey));
@@ -42,9 +44,13 @@ export default function LoginPage() {
         await signInWithEmailAndPassword(auth, email, password);
         router.push("/");
       } else {
-        const usernameKey = username.toLowerCase(); // Force lowercase for uniqueness
+        const usernameKey = username.toLowerCase();
 
-        // Check if username already exists
+        if (password !== confirmPassword) {
+          setError("Passwords do not match.");
+          return;
+        }
+
         const userDocRef = doc(db, "users", usernameKey);
         const existingUser = await getDoc(userDocRef);
         if (existingUser.exists()) {
@@ -52,15 +58,12 @@ export default function LoginPage() {
           return;
         }
 
-        // Create Firebase Auth account
         const userCred = await createUserWithEmailAndPassword(auth, inputIdentifier, password);
 
-        // Save display name as entered (original case)
         await updateProfile(userCred.user, {
           displayName: username,
         });
 
-        // Save lowercase username key to Firestore for uniqueness
         await setDoc(userDocRef, {
           email: inputIdentifier,
           uid: userCred.user.uid,
@@ -69,6 +72,7 @@ export default function LoginPage() {
         setIsLoginMode(true);
         setInputIdentifier("");
         setPassword("");
+        setConfirmPassword("");
         setUsername("");
         setSuccessMsg("Account created! Please log in.");
       }
@@ -103,13 +107,45 @@ export default function LoginPage() {
         onChange={(e) => setInputIdentifier(e.target.value)}
       />
 
-      <input
-        className="input-box"
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+      {/* Password Field */}
+      <div className="flex flex-col items-center">
+        <input
+          className="input-box"
+          type={showPassword ? "text" : "password"}
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <label className="mt-1 text-sm text-gray-700 flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={showPassword}
+            onChange={() => setShowPassword(!showPassword)}
+          />
+          Show password
+        </label>
+      </div>
+
+      {/* Confirm Password for Sign Up */}
+      {!isLoginMode && (
+        <div className="flex flex-col items-center">
+          <input
+            className="input-box"
+            type={showConfirmPassword ? "text" : "password"}
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+          <label className="mt-1 text-sm text-gray-700 flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={showConfirmPassword}
+              onChange={() => setShowConfirmPassword(!showConfirmPassword)}
+            />
+            Show confirm password
+          </label>
+        </div>
+      )}
 
       {error && <div className="pretty-error">{error}</div>}
       {successMsg && <p className="win-message">{successMsg}</p>}
