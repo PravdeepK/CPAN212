@@ -15,18 +15,13 @@ export default function CustomWordPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        router.push("/login");
-      }
-    });
+    const user = auth.currentUser;
+    if (!user) router.push("/login");
 
     const savedTheme = localStorage.getItem("darkMode");
     const isDark = savedTheme === "true";
     setDarkMode(isDark);
     document.documentElement.classList.toggle("dark", isDark);
-
-    return () => unsubscribe();
   }, []);
 
   const createChallenge = async () => {
@@ -44,6 +39,8 @@ export default function CustomWordPage() {
       });
 
       const data = await response.json();
+
+      // ✅ This ensures only real English words are accepted
       if (!data.valid) {
         alert("Invalid word. Not accepted.");
         return;
@@ -54,10 +51,10 @@ export default function CustomWordPage() {
         timestamp: new Date(),
       });
 
-      console.log("Challenge created with ID:", docRef.id);
       setChallengeLink(`${window.location.origin}/custom-challenge/${docRef.id}`);
     } catch (err) {
       console.error("Challenge creation error:", err);
+      alert("Something went wrong. Please try again.");
     }
   };
 

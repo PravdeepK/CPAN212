@@ -26,9 +26,9 @@ export default function CustomChallengePage() {
   const [keyStatuses, setKeyStatuses] = useState({});
   const [gameOver, setGameOver] = useState(false);
   const [won, setWon] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const [challengeExpired, setChallengeExpired] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -36,7 +36,7 @@ export default function CustomChallengePage() {
         router.push("/login");
         return;
       }
-      setUsername(user.displayName);
+      setUsername(user.displayName || "Player");
 
       const theme = localStorage.getItem("darkMode") === "true";
       setDarkMode(theme);
@@ -54,76 +54,127 @@ export default function CustomChallengePage() {
     return () => unsubscribe();
   }, [id]);
 
-  useEffect(() => {
-    const handleEnterOnly = (e) => {
-      if (e.key === "Enter") {
-        handleVirtualKey("ENTER");
-      }
-    };
-    window.addEventListener("keydown", handleEnterOnly);
-    return () => window.removeEventListener("keydown", handleEnterOnly);
-  }, [currentGuess, gameOver, secretWord]);
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    localStorage.setItem("darkMode", newMode);
+    document.documentElement.classList.toggle("dark", newMode);
+  };
+
+  const validateWord = async (word) => {
+    try {
+      const res = await fetch("/api/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ word }),
+      });
+      const data = await res.json();
+      return data.valid;
+    } catch {
+      return false;
+    }
+  };
 
   const saveResult = async (result) => {
     if (!username || !secretWord) return;
 
-    const entry = {
-      word: secretWord,
-      result,
-      timestamp: new Date(),
-    };
-
     await addDoc(
       collection(db, "users", username, "games", "custom", "entries"),
-      entry
+      {
+        word: secretWord,
+        result,
+        timestamp: new Date(),
+      }
     );
 
     await deleteDoc(doc(db, "customChallenges", id));
   };
 
   const checkGuess = (guess) => {
-    return guess.split("").map((letter, index) => {
-      if (letter === secretWord[index]) return "bg-green-600 text-white";
-      if (secretWord.includes(letter)) return "bg-yellow-400 text-black";
-      return "bg-gray-500 text-white";
-    });
+    const result = Array(secretWord.length).fill("bg-gray-400 text-white");
+    const matched = Array(secretWord.length).fill(false);
+    const secretLetters = secretWord.split("");
+
+    for (let i = 0; i < guess.length; i++) {
+      if (guess[i] === secretLetters[i]) {
+        result[i] = "bg-green-500 text-white";
+        matched[i] = true;
+      }
+    }
+
+    for (let i = 0; i < guess.length; i++) {
+      if (result[i] === "bg-green-500 text-white") continue;
+
+      const idx = secretLetters.findIndex(
+        (letter, j) => letter === guess[i] && !matched[j]
+      );
+
+      if (idx !== -1) {
+        result[i] = "bg-yellow-500 text-black";
+        matched[idx] = true;
+      }
+    }
+
+    return result;
+  };
+
+  const handleKeyPress = async (e) => {
+    if (gameOver) return;
+
+    if (e.key === "Enter" && currentGuess.length === secretWord.length) {
+      setErrorMessage("");
+
+      const isValidWord = await validateWord(currentGuess);
+      if (!isValidWord) {
+        setErrorMessage("Not a valid word! Please enter a real word.");
+        return;
+      }
+
+      const newGuesses = [...guesses];
+      const nextEmptyRow = newGuesses.findIndex((row) => row === "");
+      if (nextEmptyRow !== -1) {
+        newGuesses[nextEmptyRow] = currentGuess;
+        setGuesses(newGuesses);
+
+        const tileColors = checkGuess(currentGuess);
+        const newKeyStatuses = { ...keyStatuses };
+        currentGuess.split("").forEach((letter, index) => {
+          const color = tileColors[index];
+          if (
+            color.includes("green") ||
+            (color.includes("yellow") && newKeyStatuses[letter] !== "bg-green-500 text-white")
+          ) {
+            newKeyStatuses[letter] = color;
+          } else if (!newKeyStatuses[letter]) {
+            newKeyStatuses[letter] = color;
+          }
+        });
+
+        setKeyStatuses(newKeyStatuses);
+      }
+
+      if (currentGuess === secretWord) {
+        await saveResult("win");
+        setWon(true);
+        setGameOver(true);
+      } else if (newGuesses.filter((g) => g !== "").length >= MAX_TRIES) {
+        await saveResult("lose");
+        setGameOver(true);
+      }
+
+      setCurrentGuess("");
+    }
   };
 
   const handleVirtualKey = async (key) => {
     if (gameOver) return;
 
-    if (key === "ENTER" && currentGuess.length === secretWord.length) {
-      const updatedGuesses = [...guesses];
-      const nextRow = updatedGuesses.findIndex((g) => g === "");
-      updatedGuesses[nextRow] = currentGuess;
-      setGuesses(updatedGuesses);
-
-      const newKeyStatus = { ...keyStatuses };
-      currentGuess.split("").forEach((char, i) => {
-        if (char === secretWord[i]) {
-          newKeyStatus[char] = "bg-green-600 text-white";
-        } else if (secretWord.includes(char)) {
-          newKeyStatus[char] = newKeyStatus[char] || "bg-yellow-400 text-black";
-        } else {
-          newKeyStatus[char] = "bg-gray-500 text-white";
-        }
-      });
-      setKeyStatuses(newKeyStatus);
-
-      if (currentGuess === secretWord) {
-        setWon(true);
-        setGameOver(true);
-        await saveResult("win");
-      } else if (updatedGuesses.filter((g) => g !== "").length >= MAX_TRIES) {
-        setGameOver(true);
-        await saveResult("lose");
-      }
-
-      setCurrentGuess("");
+    if (key === "ENTER") {
+      await handleKeyPress({ key: "Enter" });
     } else if (key === "⌫") {
       setCurrentGuess((prev) => prev.slice(0, -1));
-    } else if (/^[a-zA-Z]$/.test(key) && currentGuess.length < secretWord.length) {
-      setCurrentGuess((prev) => prev + key.toUpperCase());
+    } else if (currentGuess.length < secretWord.length) {
+      setCurrentGuess((prev) => prev + key);
     }
   };
 
@@ -139,51 +190,58 @@ export default function CustomChallengePage() {
     );
   }
 
-  if (!secretWord) return null;
+  if (!secretWord || !username) return null;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-center">
+    <div className="flex flex-col justify-start items-center min-h-screen w-full text-center gap-3 px-2">
       <h1 className="title">Custom Challenge</h1>
+
+      <label className="dark-mode-switch">
+        <input type="checkbox" checked={darkMode} onChange={toggleDarkMode} />
+        <span className="slider"></span>
+      </label>
 
       <div className="grid">
         {guesses.map((guess, rowIndex) => {
-          const colors = guess
+          const tileColors = guess
             ? checkGuess(guess)
             : Array(secretWord.length).fill("border-gray-400");
+
           return (
             <div key={rowIndex} className="grid-row">
-              {Array.from({ length: secretWord.length }).map((_, colIndex) => (
-                <div key={colIndex} className={`cell ${colors[colIndex]}`}>
-                  {guess[colIndex] || ""}
-                </div>
-              ))}
+              {Array.from({ length: secretWord.length }).map((_, colIndex) => {
+                const letter = guess[colIndex] || "";
+                return (
+                  <div
+                    key={colIndex}
+                    className={`cell ${tileColors[colIndex]}`}
+                  >
+                    {letter}
+                  </div>
+                );
+              })}
             </div>
           );
         })}
       </div>
 
       <input
-        className="input-box"
+        type="text"
         value={currentGuess}
         onChange={(e) => setCurrentGuess(e.target.value.toUpperCase())}
+        onKeyPress={handleKeyPress}
+        className="input-box"
         maxLength={secretWord.length}
       />
 
-      {errorMessage && <p className="error-message">{errorMessage}</p>}
-
-      {gameOver && (
-        <p className={won ? "text-green-500" : "text-red-500"}>
-          {won ? "You nailed it!" : `The word was ${secretWord}`}
-        </p>
-      )}
-
+      {/* Custom Keyboard */}
       <div className="keyboard">
         <div className="keyboard-row">
           {"QWERTYUIOP".split("").map((key) => (
             <button
               key={key}
-              onClick={() => handleVirtualKey(key)}
               className={`key ${keyStatuses[key] || ""}`}
+              onClick={() => handleVirtualKey(key)}
             >
               {key}
             </button>
@@ -194,8 +252,8 @@ export default function CustomChallengePage() {
           {"ASDFGHJKL".split("").map((key) => (
             <button
               key={key}
-              onClick={() => handleVirtualKey(key)}
               className={`key ${keyStatuses[key] || ""}`}
+              onClick={() => handleVirtualKey(key)}
             >
               {key}
             </button>
@@ -213,8 +271,8 @@ export default function CustomChallengePage() {
           {"ZXCVBNM".split("").map((key) => (
             <button
               key={key}
-              onClick={() => handleVirtualKey(key)}
               className={`key ${keyStatuses[key] || ""}`}
+              onClick={() => handleVirtualKey(key)}
             >
               {key}
             </button>
@@ -229,9 +287,24 @@ export default function CustomChallengePage() {
         </div>
       </div>
 
-      <button className="restart-button" onClick={() => router.push("/")}>
-        Back to Game
-      </button>
+      {errorMessage && <p className="error-message">{errorMessage}</p>}
+
+      {gameOver && (
+        <p className="game-over">
+          {won
+            ? "Congrats! You guessed the word!"
+            : `Game Over! The word was ${secretWord}`}
+        </p>
+      )}
+
+      <div className="flex flex-col gap-1 mt-2">
+        <button
+          onClick={() => router.push("/")}
+          className="restart-button"
+        >
+          Back to Game
+        </button>
+      </div>
     </div>
   );
 }

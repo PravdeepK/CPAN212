@@ -99,7 +99,7 @@ export default function Home() {
         return;
       }
 
-      setSecretWord(data.word);
+      setSecretWord(data.word.toUpperCase());
       setGuesses(Array(MAX_TRIES).fill(""));
       setKeyStatuses({});
       setGameOver(false);
@@ -127,17 +127,33 @@ export default function Home() {
   };
 
   const checkGuess = (guess) => {
-    let tileColors = Array(difficulty).fill("bg-gray-400 text-white");
+    const result = Array(difficulty).fill("bg-gray-400 text-white");
+    const matched = Array(difficulty).fill(false);
+    const secretLetters = secretWord.split("");
 
-    guess.split("").forEach((letter, index) => {
-      if (letter === secretWord[index]) {
-        tileColors[index] = "bg-green-500 text-white";
-      } else if (secretWord.includes(letter)) {
-        tileColors[index] = "bg-yellow-500 text-black";
+    // First pass: exact match
+    for (let i = 0; i < guess.length; i++) {
+      if (guess[i] === secretLetters[i]) {
+        result[i] = "bg-green-500 text-white";
+        matched[i] = true;
       }
-    });
+    }
 
-    return tileColors;
+    // Second pass: in word but wrong spot
+    for (let i = 0; i < guess.length; i++) {
+      if (result[i] === "bg-green-500 text-white") continue;
+
+      const idx = secretLetters.findIndex(
+        (letter, j) => letter === guess[i] && !matched[j]
+      );
+
+      if (idx !== -1) {
+        result[i] = "bg-yellow-500 text-black";
+        matched[idx] = true;
+      }
+    }
+
+    return result;
   };
 
   const handleKeyPress = async (e) => {
@@ -158,23 +174,23 @@ export default function Home() {
         newGuesses[nextEmptyRow] = currentGuess;
         setGuesses(newGuesses);
 
+        const tileColors = checkGuess(currentGuess);
+
         let newKeyStatuses = { ...keyStatuses };
         currentGuess.split("").forEach((letter, index) => {
-          if (letter === secretWord[index]) {
-            newKeyStatuses[letter] = "bg-green-500 text-white";
-          } else if (secretWord.includes(letter)) {
-            if (newKeyStatuses[letter] !== "bg-green-500 text-white") {
-              newKeyStatuses[letter] = "bg-yellow-500 text-black";
-            }
-          } else {
-            newKeyStatuses[letter] = "bg-gray-400 text-white";
+          const color = tileColors[index];
+          if (
+            color.includes("green") ||
+            (color.includes("yellow") && newKeyStatuses[letter] !== "bg-green-500 text-white")
+          ) {
+            newKeyStatuses[letter] = color;
+          } else if (!newKeyStatuses[letter]) {
+            newKeyStatuses[letter] = color;
           }
         });
 
         setKeyStatuses(newKeyStatuses);
       }
-
-      setCurrentGuess("");
 
       if (currentGuess === secretWord) {
         await saveGameResult("win");
@@ -184,6 +200,8 @@ export default function Home() {
         await saveGameResult("lose");
         setGameOver(true);
       }
+
+      setCurrentGuess("");
     }
   };
 
