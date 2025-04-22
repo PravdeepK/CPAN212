@@ -131,7 +131,6 @@ export default function Home() {
     const matched = Array(difficulty).fill(false);
     const secretLetters = secretWord.split("");
 
-    // First pass: exact match
     for (let i = 0; i < guess.length; i++) {
       if (guess[i] === secretLetters[i]) {
         result[i] = "bg-green-500 text-white";
@@ -139,7 +138,6 @@ export default function Home() {
       }
     }
 
-    // Second pass: in word but wrong spot
     for (let i = 0; i < guess.length; i++) {
       if (result[i] === "bg-green-500 text-white") continue;
 
@@ -362,6 +360,13 @@ export default function Home() {
           className="scoreboard-button"
         >
           View Scoreboard
+        </button>
+
+        <button
+          onClick={() => router.push("/multiplayer")}
+          className="scoreboard-button"
+        >
+          Multiplayer Mode
         </button>
 
         <button

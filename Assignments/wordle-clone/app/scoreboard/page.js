@@ -21,183 +21,280 @@ export default function Scoreboard() {
   const [games, setGames] = useState([]);
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [resultFilter, setResultFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState("all"); // default to all
 
   const fetchAllGames = async () => {
     const user = auth.currentUser;
-    if (!user || !user.displayName) {
+    if (!user?.displayName) {
       router.push("/login");
       return;
     }
-
     const username = user.displayName;
     const allGames = [];
 
-    // Normal 3–10 letter games
+    // solo 3–10
     for (let i = 3; i <= 10; i++) {
-      const q = query(
-        collection(db, "users", username, "games", i.toString(), "entries"),
-        orderBy("timestamp", "desc")
+      const snap = await getDocs(
+        query(
+          collection(db, "users", username, "games", i.toString(), "entries"),
+          orderBy("timestamp", "desc")
+        )
       );
-
-      const snapshot = await getDocs(q);
-      snapshot.forEach((doc) => {
-        allGames.push({ id: doc.id, difficulty: i, ...doc.data() });
-      });
+      snap.forEach((d) =>
+        allGames.push({ id: d.id, difficulty: i, ...d.data() })
+      );
     }
-
-    // ✅ Custom Word games
-    const customSnapshot = await getDocs(
-      query(collection(db, "users", username, "games", "custom", "entries"), orderBy("timestamp", "desc"))
-    );
-
-    customSnapshot.forEach((doc) => {
-      allGames.push({ id: doc.id, difficulty: "custom", ...doc.data() });
-    });
+    // custom
+    {
+      const snap = await getDocs(
+        query(
+          collection(db, "users", username, "games", "custom", "entries"),
+          orderBy("timestamp", "desc")
+        )
+      );
+      snap.forEach((d) =>
+        allGames.push({ id: d.id, difficulty: "custom", ...d.data() })
+      );
+    }
+    // multiplayer
+    {
+      const snap = await getDocs(
+        query(
+          collection(db, "users", username, "games", "multiplayer", "entries"),
+          orderBy("timestamp", "desc")
+        )
+      );
+      snap.forEach((d) =>
+        allGames.push({ id: d.id, difficulty: "multiplayer", ...d.data() })
+      );
+    }
 
     setGames(allGames);
   };
 
   const resetScoreboard = async () => {
     const user = auth.currentUser;
-    if (!user || !user.displayName) return;
-
-    const confirmReset = window.confirm(
-      "Are you sure you want to reset your scoreboard? This cannot be undone!"
-    );
-    if (!confirmReset) return;
-
+    if (!user.displayName) return;
+    if (!confirm("Reset your scoreboard?")) return;
     const username = user.displayName;
 
-    try {
-      for (let i = 3; i <= 10; i++) {
-        const q = query(
-          collection(db, "users", username, "games", i.toString(), "entries")
-        );
-        const snapshot = await getDocs(q);
-        const deletePromises = snapshot.docs.map((docItem) =>
-          deleteDoc(doc(db, "users", username, "games", i.toString(), "entries", docItem.id))
-        );
-        await Promise.all(deletePromises);
-      }
-
-      const customSnap = await getDocs(
+    // delete solo 3–10
+    for (let i = 3; i <= 10; i++) {
+      const snap = await getDocs(
+        collection(db, "users", username, "games", i.toString(), "entries")
+      );
+      await Promise.all(
+        snap.docs.map((docItem) =>
+          deleteDoc(
+            doc(
+              db,
+              "users",
+              username,
+              "games",
+              i.toString(),
+              "entries",
+              docItem.id
+            )
+          )
+        )
+      );
+    }
+    // custom
+    {
+      const snap = await getDocs(
         collection(db, "users", username, "games", "custom", "entries")
       );
-      const customDeletes = customSnap.docs.map((docItem) =>
-        deleteDoc(doc(db, "users", username, "games", "custom", "entries", docItem.id))
+      await Promise.all(
+        snap.docs.map((docItem) =>
+          deleteDoc(
+            doc(
+              db,
+              "users",
+              username,
+              "games",
+              "custom",
+              "entries",
+              docItem.id
+            )
+          )
+        )
       );
-      await Promise.all(customDeletes);
-
-      await fetchAllGames();
-      alert("Scoreboard has been reset!");
-    } catch (error) {
-      console.error("Failed to reset scoreboard:", error);
     }
+    // multiplayer
+    {
+      const snap = await getDocs(
+        collection(db, "users", username, "games", "multiplayer", "entries")
+      );
+      await Promise.all(
+        snap.docs.map((docItem) =>
+          deleteDoc(
+            doc(
+              db,
+              "users",
+              username,
+              "games",
+              "multiplayer",
+              "entries",
+              docItem.id
+            )
+          )
+        )
+      );
+    }
+
+    await fetchAllGames();
+    alert("Scoreboard reset!");
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && user.displayName) {
-        fetchAllGames();
-      } else {
-        router.push("/login");
-      }
+    const unsub = onAuthStateChanged(auth, (u) => {
+      if (u?.displayName) fetchAllGames();
+      else router.push("/login");
     });
-
-    return () => unsubscribe();
+    return () => unsub();
   }, []);
 
-  const filteredGames = games.filter((game) => {
-    const matchDifficulty =
+  const filtered = games.filter((g) => {
+    const isMulti = g.multiplayer === true;
+
+    // show all if activeTab === 'all'
+    const tabOk =
+      activeTab === "all" ||
+      (activeTab === "multiplayer" && isMulti) ||
+      (activeTab === "solo" && !isMulti);
+
+    const diffOk =
       difficultyFilter === "all" ||
-      game.difficulty === "custom" && difficultyFilter === "custom" ||
-      game.difficulty === parseInt(difficultyFilter);
-    const matchResult =
-      resultFilter === "all" || game.result === resultFilter;
-    return matchDifficulty && matchResult;
+      (g.difficulty === "custom" && difficultyFilter === "custom") ||
+      g.difficulty === parseInt(difficultyFilter);
+    const resOk = resultFilter === "all" || g.result === resultFilter;
+    return tabOk && diffOk && resOk;
   });
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-center">
-      <h1 className="title">Scoreboard</h1>
+    <div className="flex flex-col items-center min-h-screen gap-4 p-4 text-center">
+      <h1 className="title">SCOREBOARD</h1>
 
-      {/* Filters */}
-      <div className="flex flex-wrap justify-center gap-2">
+      {/* Game Modes */}
+      <div className="flex flex-wrap gap-2 justify-center">
         <button
-          className={`scoreboard-button ${difficultyFilter === "all" ? "active-button" : ""}`}
-          onClick={() => setDifficultyFilter("all")}
+          className={`scoreboard-button ${
+            activeTab === "all" ? "active-button" : ""
+          }`}
+          onClick={() => {
+            setActiveTab("all");
+            setDifficultyFilter("all");
+          }}
         >
-          All Difficulties
+          All Game Modes
         </button>
         {[...Array(8)].map((_, i) => {
           const len = (i + 3).toString();
           return (
             <button
               key={len}
-              className={`scoreboard-button ${difficultyFilter === len ? "active-button" : ""}`}
-              onClick={() => setDifficultyFilter(len)}
+              className={`scoreboard-button ${
+                difficultyFilter === len ? "active-button" : ""
+              }`}
+              onClick={() => {
+                setDifficultyFilter(len);
+                setActiveTab("solo");
+              }}
             >
               {len} Letters
             </button>
           );
         })}
         <button
-          className={`scoreboard-button ${difficultyFilter === "custom" ? "active-button" : ""}`}
-          onClick={() => setDifficultyFilter("custom")}
+          className={`scoreboard-button ${
+            difficultyFilter === "custom" && activeTab === "solo"
+              ? "active-button"
+              : ""
+          }`}
+          onClick={() => {
+            setDifficultyFilter("custom");
+            setActiveTab("solo");
+          }}
         >
           Custom
         </button>
+        <button
+          className={`scoreboard-button ${
+            activeTab === "multiplayer" ? "active-button" : ""
+          }`}
+          onClick={() => {
+            setActiveTab("multiplayer");
+            setDifficultyFilter("all");
+          }}
+        >
+          Multiplayer
+        </button>
       </div>
 
-      <div className="flex gap-2 flex-wrap justify-center">
+      {/* Results */}
+      <div className="flex gap-2">
         <button
-          className={`scoreboard-button ${resultFilter === "all" ? "active-button" : ""}`}
+          className={`scoreboard-button ${
+            resultFilter === "all" ? "active-button" : ""
+          }`}
           onClick={() => setResultFilter("all")}
         >
           All Results
         </button>
         <button
-          className={`scoreboard-button ${resultFilter === "win" ? "active-button" : ""}`}
+          className={`scoreboard-button ${
+            resultFilter === "win" ? "active-button" : ""
+          }`}
           onClick={() => setResultFilter("win")}
         >
           Wins
         </button>
         <button
-          className={`scoreboard-button ${resultFilter === "lose" ? "active-button" : ""}`}
+          className={`scoreboard-button ${
+            resultFilter === "lose" ? "active-button" : ""
+          }`}
           onClick={() => setResultFilter("lose")}
         >
           Losses
         </button>
       </div>
 
-      {/* Game List */}
-      {filteredGames.length === 0 ? (
+      {/* List */}
+      {filtered.length === 0 ? (
         <p>No games found.</p>
       ) : (
         <ul className="text-lg">
-          {filteredGames.map((game, index) => (
+          {filtered.map((g, i) => (
             <li
-              key={game.id}
-              className={game.result === "win" ? "text-green-600" : "text-red-600"}
+              key={g.id}
+              className={g.result === "win" ? "text-green-600" : "text-red-600"}
             >
-              {index + 1}.{" "}
-              {game.result === "win" ? "✅ Win" : "❌ Loss"} — Word:{" "}
-              <strong>{game.word}</strong>{" "}
-              {game.difficulty === "custom"
-                ? "(Custom Word)"
-                : `(${game.difficulty} letters)`}
+              {i + 1}.{" "}
+              {g.result === "win" ? "✅ Win" : "❌ Loss"} — Word:{" "}
+              <strong>{g.word}</strong>{" "}
+              {g.difficulty === "custom"
+                ? "(Custom)"
+                : g.difficulty === "multiplayer"
+                ? "(Multiplayer)"
+                : `(${g.difficulty} letters)`}{" "}
+              {g.multiplayer && g.player && (
+                <span className="text-blue-500 ml-1 text-sm">
+                  (vs {g.player})
+                </span>
+              )}
             </li>
           ))}
         </ul>
       )}
 
-      <button onClick={resetScoreboard} className="restart-button">
-        Reset Scoreboard
-      </button>
-
-      <button onClick={() => router.push("/")} className="restart-button">
-        Back to Game
-      </button>
+      <div className="flex gap-2">
+        <button className="restart-button" onClick={resetScoreboard}>
+          Reset Scoreboard
+        </button>
+        <button className="restart-button" onClick={() => router.push("/")}>
+          Back to Game
+        </button>
+      </div>
     </div>
   );
 }
