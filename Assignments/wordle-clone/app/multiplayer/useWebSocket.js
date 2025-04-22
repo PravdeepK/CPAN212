@@ -7,7 +7,7 @@ export default function useWebSocket(options = {}) {
     const url =
       typeof window !== "undefined" && window.location.hostname === "localhost"
         ? "ws://localhost:3005"
-        : "wss://orange-moles-own.loca.lt";
+        : "wss://quiet-foxes-tease.loca.lt";
 
     const ws = new WebSocket(url);
 
