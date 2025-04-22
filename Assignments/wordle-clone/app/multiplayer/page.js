@@ -9,11 +9,18 @@ import { getFirestore, collection, addDoc } from "firebase/firestore";
 const MAX_TRIES = 6;
 let socket;
 
+// Try ngrok or Vercel‐provided tunnel first, otherwise localhost in dev, otherwise your prod WS endpoint
+const WS_URL =
+  process.env.NEXT_PUBLIC_WS_URL ||
+  (typeof window !== "undefined" && window.location.hostname === "localhost"
+    ? "ws://localhost:3005"
+    : "wss://your-production-domain.com");
+
 export default function MultiplayerPage() {
   const router = useRouter();
   const db = getFirestore();
 
-  // ————— STATE —————
+  // — state —
   const [username, setUsername] = useState(null);
   const [roomId, setRoomId] = useState("");
   const [isHost, setIsHost] = useState(false);
@@ -29,26 +36,24 @@ export default function MultiplayerPage() {
   const [won, setWon] = useState(false);
   const [keyStatuses, setKeyStatuses] = useState({});
 
-  // ————— AUTH LISTENER —————
+  // — auth listener —
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
-      if (!u) router.replace("/login");
-      else setUsername(u.displayName || "Player");
+      if (!u) {
+        router.replace("/login");
+      } else {
+        setUsername(u.displayName || "Player");
+      }
     });
     return () => unsub();
   }, [router]);
 
-  // ————— WEBSOCKET SETUP —————
+  // — websocket setup —
   useEffect(() => {
-    const WS_URL =
-      window.location.hostname === "localhost"
-        ? "ws://localhost:3005"
-        : "wss://quiet-foxes-tease.loca.lt";
-
     socket = new WebSocket(WS_URL);
 
     socket.onopen = () => {
-      console.log("WebSocket connected to", WS_URL);
+      console.log("✅ WS connected to", WS_URL);
     };
 
     socket.onmessage = ({ data }) => {
@@ -83,16 +88,31 @@ export default function MultiplayerPage() {
       }
     };
 
-    socket.onclose = () => {
-      console.log("WebSocket disconnected");
-    };
+    socket.onerror = (err) => console.error("WS error", err);
+    socket.onclose = () => console.log("WS closed");
 
-    return () => {
-      socket.close();
-    };
+    return () => socket.close();
   }, []);
 
-  // ————— HELPERS —————
+  // — save to Firestore —
+  const saveResult = async (result) => {
+    if (!username || !word) return;
+    try {
+      await addDoc(
+        collection(db, "users", username, "games", "multiplayer", "entries"),
+        {
+          word,
+          result,            // "win" or "lose"
+          multiplayer: true, // for scoreboard filtering
+          timestamp: new Date(),
+        }
+      );
+    } catch (err) {
+      console.error("Failed to save multiplayer result:", err);
+    }
+  };
+
+  // — helpers —
   const validateWord = async (w) => {
     try {
       const res = await fetch("/api/validate", {
@@ -130,7 +150,7 @@ export default function MultiplayerPage() {
     return res;
   };
 
-  // ————— GAME ACTIONS —————
+  // — game actions —
   const startGame = () => {
     socket.send(JSON.stringify({ type: "create-room" }));
   };
@@ -148,12 +168,12 @@ export default function MultiplayerPage() {
 
     if (key === "ENTER") {
       if (currentGuess.length !== 5) return;
-      if (!(await validateWord(currentGuess)))
+      if (!(await validateWord(currentGuess))) {
         return alert("❌ Not a valid word.");
+      }
 
       const guessU = currentGuess.toUpperCase();
-
-      // your board update
+      // record your guess
       setGuesses((g) => {
         const n = [...g];
         const i = n.findIndex((x) => x === "");
@@ -161,7 +181,7 @@ export default function MultiplayerPage() {
         return n;
       });
 
-      // update keyboard
+      // update your keyboard
       const colors = checkGuess(guessU);
       setKeyStatuses((ks) => {
         const n = { ...ks };
@@ -179,7 +199,7 @@ export default function MultiplayerPage() {
         return n;
       });
 
-      // tell opponent
+      // broadcast to opponent
       socket.send(
         JSON.stringify({
           type: "send-guess",
@@ -196,9 +216,14 @@ export default function MultiplayerPage() {
         setGameOver(true);
         setWon(wonIt);
         setYouDone(true);
+
+        // notify server
         socket.send(
           JSON.stringify({ type: "player-finished", payload: { roomId } })
         );
+
+        // save to Firestore
+        await saveResult(wonIt ? "win" : "lose");
       }
 
       setCurrentGuess("");
@@ -209,22 +234,25 @@ export default function MultiplayerPage() {
     }
   };
 
-  // reveal opponent only when both done
+  // reveal only once both players finish
   const revealOpponent = youDone && themDone;
 
-  // ————— RENDER HELPERS —————
+  // — board renderer —
   const renderBoard = (list, title, showLetters) => (
     <div className="flex flex-col items-center gap-1">
       <h3 className="font-bold">{title}</h3>
       <div className="grid">
         {list.map((row, ri) => {
           const cols =
-            row === "" ? Array(5).fill("border-gray-400") : checkGuess(row);
+            row === ""
+              ? Array(5).fill("border-gray-400")
+              : checkGuess(row.toUpperCase());
+          const letters = row.toUpperCase().split("");
           return (
             <div key={ri} className="grid-row">
               {cols.map((c, ci) => (
                 <div key={ci} className={`cell ${c}`}>
-                  {showLetters && row ? row[ci] : ""}
+                  {showLetters && row ? letters[ci] : ""}
                 </div>
               ))}
             </div>
@@ -258,7 +286,11 @@ export default function MultiplayerPage() {
             {renderBoard(guesses, "Your Board", true)}
             {renderBoard(opponentGuesses, "Opponent Board", revealOpponent)}
           </div>
+        </>
+      )}
 
+      {roomId && (
+        <>
           <input
             type="text"
             value={currentGuess}
@@ -273,7 +305,6 @@ export default function MultiplayerPage() {
                 handleKey(e.key.toUpperCase());
             }}
           />
-
           <div className="keyboard">
             {["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"].map((row, i) => (
               <div className="keyboard-row" key={i}>
@@ -308,13 +339,15 @@ export default function MultiplayerPage() {
               </div>
             ))}
           </div>
-
-          {gameOver && (
-            <p className="game-over">
-              {won ? "🎉 Congrats, you beat it!" : `😞 The word was ${word}`}
-            </p>
-          )}
         </>
+      )}
+
+      {gameOver && (
+        <p className="game-over">
+          {won
+            ? "🎉 Congrats, you beat it!"
+            : `😞 You failed! The word was ${word}`}
+        </p>
       )}
 
       <button

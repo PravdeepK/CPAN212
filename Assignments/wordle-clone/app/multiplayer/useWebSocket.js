@@ -4,10 +4,17 @@ export default function useWebSocket(options = {}) {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    const url =
-      typeof window !== "undefined" && window.location.hostname === "localhost"
-        ? "ws://localhost:3005"
-        : "wss://quiet-foxes-tease.loca.lt";
+    const isDev =
+      typeof window !== "undefined" && window.location.hostname === "localhost";
+
+    const url = isDev
+      ? "ws://localhost:3005"
+      : process.env.NEXT_PUBLIC_WS_URL;
+
+    if (!url) {
+      console.error("❌ No WebSocket URL configured!");
+      return;
+    }
 
     const ws = new WebSocket(url);
 
@@ -19,11 +26,11 @@ export default function useWebSocket(options = {}) {
     ws.onmessage = (event) => {
       try {
         const { type, payload } = JSON.parse(event.data);
-        if (type === "room-created") options.onRoomJoined?.(payload.roomId, payload.word);
-        if (type === "room-joined") options.onRoomJoined?.(payload.roomId, payload.word);
-        if (type === "guest-joined") options.onGuestJoined?.();
-        if (type === "guess") options.onOpponentGuess?.(payload.guess);
-        if (type === "room-expired") alert("Room has expired. Please refresh and try again.");
+        if (type === "room-created")   options.onRoomJoined?.(payload.roomId, payload.word);
+        if (type === "room-joined")    options.onRoomJoined?.(payload.roomId, payload.word);
+        if (type === "guest-joined")   options.onGuestJoined?.();
+        if (type === "guess")          options.onOpponentGuess?.(payload.guess);
+        if (type === "room-expired")   alert("Room has expired. Please refresh and try again.");
       } catch (err) {
         console.warn("❌ Invalid WebSocket message:", err);
       }
@@ -37,8 +44,6 @@ export default function useWebSocket(options = {}) {
     ws.onclose = () => {
       console.warn("🔌 WebSocket connection closed.");
     };
-
-    setSocket(ws);
 
     return () => ws.close();
   }, []);
