@@ -40,7 +40,7 @@ export default function MultiplayerPage() {
     socket = new WebSocket(
       window.location.hostname === "localhost"
         ? "ws://localhost:3005"
-        : "wss://5fe4-99-234-89-67.ngrok-free.app"
+        : "wss://wordle-proj.ngrok.io"
     );
 
     socket.onmessage = ({ data }) => {
