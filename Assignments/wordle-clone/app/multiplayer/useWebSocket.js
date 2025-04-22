@@ -7,7 +7,7 @@ export default function useWebSocket(options = {}) {
     const url =
       typeof window !== "undefined" && window.location.hostname === "localhost"
         ? "ws://localhost:3005"
-        : "wss://5fe4-99-234-89-67.ngrok-free.app";
+        : process.env.NEXT_PUBLIC_WS_URL; // ← pulled from env
 
     const ws = new WebSocket(url);
 
@@ -38,10 +38,9 @@ export default function useWebSocket(options = {}) {
       console.warn("🔌 WebSocket connection closed.");
     };
 
-    // keep a ref so sendJsonMessage can use it
-    setSocket(ws);
-
-    return () => ws.close();
+    return () => {
+      ws.close();
+    };
   }, []);
 
   const sendJsonMessage = (type, payload) => {
