@@ -9,26 +9,16 @@ import { getFirestore, collection, addDoc } from "firebase/firestore";
 const MAX_TRIES = 6;
 let socket;
 
-// Try ngrok or Vercel‐provided tunnel first, otherwise localhost in dev, otherwise your prod WS endpoint
-const WS_URL =
-  process.env.NEXT_PUBLIC_WS_URL ||
-  (typeof window !== "undefined" && window.location.hostname === "localhost"
-    ? "ws://localhost:3005"
-    : "wss://your-production-domain.com");
-
 export default function MultiplayerPage() {
   const router = useRouter();
   const db = getFirestore();
 
-  // — state —
   const [username, setUsername] = useState(null);
   const [roomId, setRoomId] = useState("");
   const [isHost, setIsHost] = useState(false);
   const [word, setWord] = useState("");
   const [guesses, setGuesses] = useState(Array(MAX_TRIES).fill(""));
-  const [opponentGuesses, setOpponentGuesses] = useState(
-    Array(MAX_TRIES).fill("")
-  );
+  const [opponentGuesses, setOpponentGuesses] = useState(Array(MAX_TRIES).fill(""));
   const [youDone, setYouDone] = useState(false);
   const [themDone, setThemDone] = useState(false);
   const [currentGuess, setCurrentGuess] = useState("");
@@ -36,25 +26,22 @@ export default function MultiplayerPage() {
   const [won, setWon] = useState(false);
   const [keyStatuses, setKeyStatuses] = useState({});
 
-  // — auth listener —
+  // — Auth listener —
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
-      if (!u) {
-        router.replace("/login");
-      } else {
-        setUsername(u.displayName || "Player");
-      }
+      if (!u) router.replace("/login");
+      else setUsername(u.displayName || "Player");
     });
     return () => unsub();
   }, [router]);
 
-  // — websocket setup —
+  // — WebSocket setup —
   useEffect(() => {
-    socket = new WebSocket(WS_URL);
-
-    socket.onopen = () => {
-      console.log("✅ WS connected to", WS_URL);
-    };
+    socket = new WebSocket(
+      window.location.hostname === "localhost"
+        ? "ws://localhost:3005"
+        : "wss://5fe4-99-234-89-67.ngrok-free.app"
+    );
 
     socket.onmessage = ({ data }) => {
       const { type, payload } = JSON.parse(data);
@@ -71,14 +58,17 @@ export default function MultiplayerPage() {
         setWord(payload.word.toUpperCase());
       }
 
+      if (type === "guest-joined") {
+        // nothing to do here, UI can watch roomId + guest flag
+      }
+
       if (type === "guess") {
         const g = payload.guess.toUpperCase();
-        const colors = checkGuess(g);
-
-        setOpponentGuesses((o) => {
+        const cols = checkGuess(g);
+        setOpponentGuesses(o => {
           const n = [...o];
-          const i = n.findIndex((x) => x === "");
-          if (i !== -1) n[i] = g;
+          const idx = n.findIndex(x => x === "");
+          if (idx !== -1) n[idx] = g;
           return n;
         });
       }
@@ -87,32 +77,9 @@ export default function MultiplayerPage() {
         setThemDone(true);
       }
     };
-
-    socket.onerror = (err) => console.error("WS error", err);
-    socket.onclose = () => console.log("WS closed");
-
-    return () => socket.close();
   }, []);
 
-  // — save to Firestore —
-  const saveResult = async (result) => {
-    if (!username || !word) return;
-    try {
-      await addDoc(
-        collection(db, "users", username, "games", "multiplayer", "entries"),
-        {
-          word,
-          result,            // "win" or "lose"
-          multiplayer: true, // for scoreboard filtering
-          timestamp: new Date(),
-        }
-      );
-    } catch (err) {
-      console.error("Failed to save multiplayer result:", err);
-    }
-  };
-
-  // — helpers —
+  // — Helpers —  
   const validateWord = async (w) => {
     try {
       const res = await fetch("/api/validate", {
@@ -127,70 +94,68 @@ export default function MultiplayerPage() {
   };
 
   const checkGuess = (guess) => {
-    const res = Array(5).fill("border-gray-400 bg-gray-400 text-white");
+    const result = Array(5).fill("border-gray-400 bg-gray-400 text-white");
     const matched = Array(5).fill(false);
     const secret = word.split("");
 
-    // greens
+    // green pass
     for (let i = 0; i < 5; i++) {
       if (guess[i] === secret[i]) {
-        res[i] = "bg-green-500 text-white";
+        result[i] = "bg-green-500 text-white";
         matched[i] = true;
       }
     }
-    // yellows
+    // yellow pass
     for (let i = 0; i < 5; i++) {
-      if (res[i].includes("green")) continue;
+      if (result[i].includes("green")) continue;
       const idx = secret.findIndex((l, j) => l === guess[i] && !matched[j]);
       if (idx !== -1) {
-        res[i] = "bg-yellow-500 text-black";
+        result[i] = "bg-yellow-500 text-black";
         matched[idx] = true;
       }
     }
-    return res;
+    return result;
   };
 
-  // — game actions —
-  const startGame = () => {
-    socket.send(JSON.stringify({ type: "create-room" }));
-  };
-  const joinRoom = () => {
-    const id = prompt("Enter Room ID:");
-    if (id) {
-      socket.send(
-        JSON.stringify({ type: "join-room", payload: { roomId: id.trim() } })
+  const saveResult = async (result) => {
+    if (!username || !word) return;
+    try {
+      await addDoc(
+        collection(db, "users", username, "games", "multiplayer", "entries"),
+        {
+          word,
+          result,          // "win" or "lose"
+          multiplayer: true,
+          timestamp: new Date(),
+        }
       );
+    } catch (e) {
+      console.error("Failed to save result:", e);
     }
   };
 
+  // — Handle key presses —
   const handleKey = async (key) => {
     if (gameOver || !word) return;
 
     if (key === "ENTER") {
       if (currentGuess.length !== 5) return;
-      if (!(await validateWord(currentGuess))) {
-        return alert("❌ Not a valid word.");
-      }
+      if (!(await validateWord(currentGuess))) return alert("❌ Not a valid word.");
 
       const guessU = currentGuess.toUpperCase();
-      // record your guess
-      setGuesses((g) => {
+      setGuesses(g => {
         const n = [...g];
-        const i = n.findIndex((x) => x === "");
-        if (i !== -1) n[i] = guessU;
+        const idx = n.findIndex(x => x === "");
+        if (idx !== -1) n[idx] = guessU;
         return n;
       });
 
-      // update your keyboard
-      const colors = checkGuess(guessU);
-      setKeyStatuses((ks) => {
+      const cols = checkGuess(guessU);
+      setKeyStatuses(ks => {
         const n = { ...ks };
-        guessU.split("").forEach((ltr, i) => {
-          const c = colors[i];
-          if (
-            c.includes("green") ||
-            (c.includes("yellow") && n[ltr] !== "bg-green-500 text-white")
-          ) {
+        guessU.split("").forEach((ltr,i) => {
+          const c = cols[i];
+          if (c.includes("green") || (c.includes("yellow") && n[ltr] !== "bg-green-500 text-white")) {
             n[ltr] = c;
           } else if (!n[ltr]) {
             n[ltr] = c;
@@ -199,60 +164,42 @@ export default function MultiplayerPage() {
         return n;
       });
 
-      // broadcast to opponent
-      socket.send(
-        JSON.stringify({
-          type: "send-guess",
-          payload: { roomId, guess: guessU },
-        })
-      );
+      socket.send(JSON.stringify({ type: "send-guess", payload: { roomId, guess: guessU } }));
 
-      // finish check
       const wonIt = guessU === word;
-      const nextIdx = guesses.findIndex((x) => x === "");
+      const nextIdx = guesses.findIndex(x => x === "");
       const outOfTries = nextIdx === MAX_TRIES - 1;
-
       if (wonIt || outOfTries) {
         setGameOver(true);
         setWon(wonIt);
         setYouDone(true);
-
-        // notify server
-        socket.send(
-          JSON.stringify({ type: "player-finished", payload: { roomId } })
-        );
-
-        // save to Firestore
+        socket.send(JSON.stringify({ type: "player-finished", payload: { roomId } }));
         await saveResult(wonIt ? "win" : "lose");
       }
 
       setCurrentGuess("");
-    } else if (key === "⌫") {
-      setCurrentGuess((c) => c.slice(0, -1));
-    } else if (/^[A-Z]$/.test(key) && currentGuess.length < 5) {
-      setCurrentGuess((c) => c + key);
+    }
+    else if (key === "⌫") {
+      setCurrentGuess(c => c.slice(0,-1));
+    }
+    else if (/^[A-Z]$/.test(key) && currentGuess.length < 5) {
+      setCurrentGuess(c => c + key);
     }
   };
 
-  // reveal only once both players finish
-  const revealOpponent = youDone && themDone;
-
-  // — board renderer —
-  const renderBoard = (list, title, showLetters) => (
+  // — Render board —
+  const renderBoard = (rows, title, reveal) => (
     <div className="flex flex-col items-center gap-1">
       <h3 className="font-bold">{title}</h3>
       <div className="grid">
-        {list.map((row, ri) => {
-          const cols =
-            row === ""
-              ? Array(5).fill("border-gray-400")
-              : checkGuess(row.toUpperCase());
-          const letters = row.toUpperCase().split("");
+        {rows.map((row,ri) => {
+          const cols = row === "" ? Array(5).fill("border-gray-400") : checkGuess(row);
+          const letters = row.split("");
           return (
             <div key={ri} className="grid-row">
-              {cols.map((c, ci) => (
+              {cols.map((c,ci) => (
                 <div key={ci} className={`cell ${c}`}>
-                  {showLetters && row ? letters[ci] : ""}
+                  {reveal && row ? letters[ci] : ""}
                 </div>
               ))}
             </div>
@@ -262,98 +209,74 @@ export default function MultiplayerPage() {
     </div>
   );
 
+  const revealOpponent = youDone && themDone;
+
   return (
     <div className="flex flex-col items-center min-h-screen gap-4 p-4 text-center">
       <h1 className="title">MULTIPLAYER</h1>
 
-      {!roomId && (
+      {!roomId ? (
         <div className="flex flex-col gap-2 mt-2">
-          <button className="scoreboard-button" onClick={startGame}>
+          <button className="scoreboard-button" onClick={()=>socket.send(JSON.stringify({type:"create-room"}))}>
             Start Multiplayer Game
           </button>
-          <button className="scoreboard-button" onClick={joinRoom}>
+          <button className="scoreboard-button" onClick={()=>{
+            const id=prompt("Enter Room ID:");
+            if(id) socket.send(JSON.stringify({type:"join-room",payload:{roomId:id.trim()}}));
+          }}>
             Join a Room
           </button>
         </div>
-      )}
-
-      {roomId && (
+      ) : (
         <>
-          <p>
-            <strong>Room:</strong> {roomId}
-          </p>
+          <p><strong>Room:</strong> {roomId}</p>
           <div className="flex flex-col md:flex-row gap-8">
             {renderBoard(guesses, "Your Board", true)}
             {renderBoard(opponentGuesses, "Opponent Board", revealOpponent)}
           </div>
-        </>
-      )}
 
-      {roomId && (
-        <>
           <input
+            className="input-box"
             type="text"
             value={currentGuess}
             readOnly
             maxLength={5}
-            className="input-box"
             placeholder={youDone ? "" : "Type your guess…"}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleKey("ENTER");
-              else if (e.key === "Backspace") handleKey("⌫");
-              else if (/^[a-zA-Z]$/.test(e.key))
-                handleKey(e.key.toUpperCase());
+            onKeyDown={e => {
+              if (e.key==="Enter") handleKey("ENTER");
+              else if (e.key==="Backspace") handleKey("⌫");
+              else if(/^[a-zA-Z]$/.test(e.key)) handleKey(e.key.toUpperCase());
             }}
           />
+
           <div className="keyboard">
-            {["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"].map((row, i) => (
-              <div className="keyboard-row" key={i}>
-                {row.split("").map((k) => (
+            {["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"].map((row,i)=>(
+              <div key={i} className="keyboard-row">
+                {row.split("").map(k=>(
                   <button
                     key={k}
-                    className={`key ${keyStatuses[k] || ""}`}
-                    onClick={() => handleKey(k)}
+                    className={`key ${keyStatuses[k]||""}`}
+                    onClick={()=>handleKey(k)}
                     disabled={youDone}
-                  >
-                    {k}
-                  </button>
+                  >{k}</button>
                 ))}
-                {i === 2 && (
-                  <>
-                    <button
-                      className="key large-key"
-                      onClick={() => handleKey("ENTER")}
-                      disabled={youDone}
-                    >
-                      Enter
-                    </button>
-                    <button
-                      className="key large-key"
-                      onClick={() => handleKey("⌫")}
-                      disabled={youDone}
-                    >
-                      ⌫
-                    </button>
-                  </>
-                )}
+                {i===2 && <>
+                  <button className="key large-key" onClick={()=>handleKey("ENTER")} disabled={youDone}>Enter</button>
+                  <button className="key large-key" onClick={()=>handleKey("⌫")} disabled={youDone}>⌫</button>
+                </>}
               </div>
             ))}
           </div>
+
+          {gameOver && (
+            <p className="game-over">
+              {won ? "🎉 Congrats, you beat it!" : `😞 You failed! The word was ${word}`}
+            </p>
+          )}
         </>
       )}
 
-      {gameOver && (
-        <p className="game-over">
-          {won
-            ? "🎉 Congrats, you beat it!"
-            : `😞 You failed! The word was ${word}`}
-        </p>
-      )}
-
-      <button
-        className="restart-button mt-4"
-        onClick={() => router.push("/")}
-      >
+      <button className="restart-button mt-4" onClick={()=>router.push("/")}>
         Back to Main Game
       </button>
     </div>
