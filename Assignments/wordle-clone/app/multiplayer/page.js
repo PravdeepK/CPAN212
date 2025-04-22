@@ -47,7 +47,7 @@ export default function MultiplayerPage() {
     socket = new WebSocket(
       window.location.hostname === "localhost"
         ? "ws://localhost:3005"
-        : "https://orange-moles-own.loca.lt"
+        : "wss://orange-moles-own.loca.lt"
     );
 
     socket.onmessage = ({ data }) => {
